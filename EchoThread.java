@@ -43,8 +43,8 @@ public class EchoThread extends Thread
 	final static Charset ENCODING = StandardCharsets.UTF_8;
 	public ArrayList<String> encrypt=new ArrayList<String>(); //array to temporarily store encrypted or decrypted output
 
-	public static ArrayList<String> mList=new ArrayList<String>(); // array to  store user's files while application is running only.
-	public static ArrayList<String> mList2=new ArrayList<String>(); // array to  store user's files while application is running only.
+	public ArrayList<String> mList=new ArrayList<String>(); // array to  store user's files while application is running only.
+	public ArrayList<String> mList2=new ArrayList<String>(); // array to  store user's files while application is running only.
 
     /**
      * Constructor that sets up the socket we'll chat over
