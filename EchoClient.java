@@ -34,37 +34,19 @@ public class EchoClient
 	
     public static void main(String[] args)
     {
-String readName = null;
+    	String readName = null;
 	 
 	 Scanner userInputScanner = new Scanner(System.in);
 	 System.out.println("What's your username?");
-	 readSomeText(readName);
+	 readName = readSomeText();
 	 
 	 EchoClient client = new EchoClient(readName, EchoServer.SERVER_PORT);
+	 client.startClient(userInputScanner);
 			 
-			 
- if(connect())
+/* if(connect())
  {
 	 
-	 
-	 
-	try{
-	    // Connect to the specified server
-		
-	    final Socket sock = new Socket("localhost", EchoServer.SERVER_PORT);
-	    Thread.sleep(1000);
-	    System.out.println("Connected to " + host + " on port " + EchoServer.SERVER_PORT);
-	    
-	    ServerThread serverThread = new ServerThread(sock, userName);
-	    Thread serverAccessThread = new Thread(serverThread);
-	    serverAccessThread.start();
-	    
-	    while (serverAccessThread.isAlive())
-	    {
-	    	if (userInputScanner.hasNextLine() ) {
-	    		serverThread.addNextMessage(userInputScanner.nextLine());
-	    	}
-	    }
+	
 	    // Set up I/O streams with the server
 	    final ObjectOutputStream output = new ObjectOutputStream(sock.getOutputStream());
 	    final ObjectInputStream input = new ObjectInputStream(sock.getInputStream());
@@ -129,20 +111,11 @@ String readName = null;
 		    sock.close();
 		    }
 	
-		} catch(IOException io) {
-			System.out.println("Error: " + io.getMessage());
-			io.printStackTrace();
-		} catch (InterruptedException intE) {
-			System.err.println("Error: " + intE.getMessage());
-			intE.printStackTrace();
-		} catch(Exception e) {
-			System.err.println("Error: " + e.getMessage());
-		    e.printStackTrace(System.err);
-		}   
+		
 		
 	
 	
-	    }//end if(connect())
+	    } */ //end if(connect())
     }//-- end main(String[])
 
 
@@ -152,12 +125,45 @@ String readName = null;
     serverPort = portNumber;
     }
     
+    private void startClient(Scanner scan) {
+    	
+    	 
+   	 
+    	try{
+    	    // Connect to the specified server
+    		
+    	    final Socket sock = new Socket("localhost", EchoServer.SERVER_PORT);
+    	    Thread.sleep(1000);
+    	    System.out.println("Connected to " + host + " on port " + EchoServer.SERVER_PORT);
+    	    
+    	    ServerThread serverThread = new ServerThread(sock, userName);
+    	    Thread serverAccessThread = new Thread(serverThread);
+    	    serverAccessThread.start();
+    	    
+    	    while (serverAccessThread.isAlive())
+    	    {
+    	    	if (scan.hasNextLine() ) {
+    	    		serverThread.addNextMessage(scan.nextLine());
+    	    	}
+    	    }
+	    } catch(IOException io) {
+			System.out.println("Error: " + io.getMessage());
+			io.printStackTrace();
+		} catch (InterruptedException intE) {
+			System.err.println("Error: " + intE.getMessage());
+			intE.printStackTrace();
+		} catch(Exception e) {
+			System.err.println("Error: " + e.getMessage());
+		    e.printStackTrace(System.err);
+		}   
+    }
+    
     /**
      * Simple method to print a prompt and read a line of text.
      *
      * @return A line of text read from the console
      */
-    public static boolean connect()
+    /*public static boolean connect()
     {
     	String choice = null;
     	System.out.println("Would you like to connect to the server? Type Y/N");
@@ -166,24 +172,17 @@ String readName = null;
     	return true;
     	else
 		return false;
-    }
-   public static boolean disconnect()
-    {
-    	String choice = null;
-    	System.out.println("Would you like to disconnect to the server? Type Y/N");
-    	readSomeText(choice);
-    	if(choice.toUpperCase().equals("Y") )
-    	return true;
-    	else
-		return false; 
-    }
+    }*/
    
-    private static void readSomeText(String outVar)
+   
+    public static String readSomeText()
     {
+    	Scanner scan = new Scanner(System.in);
+    	String outVar = null;
     	while (outVar == null || outVar.trim().equals("")) {
 			try{
-			    BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-			    outVar = in.readLine();
+			    
+			    outVar = scan.nextLine();
 			    if (outVar.trim().equals(""))
 			    	System.out.println("Usernames must not contain whitespace. Please try again");
 				}
@@ -192,6 +191,8 @@ String readName = null;
 			    e.printStackTrace(System.err);
 				}
     	}
+    	scan.close();
+    	return outVar;
     } //-- end readSomeText()
     
 } //-- end class EchoClient

@@ -5,8 +5,8 @@ import java.net.ServerSocket;  // The server uses this to bind to a port
 import java.net.Socket;        // Incoming connections are represented as sockets
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * A simple server class.  Accepts client connections and forks
@@ -19,7 +19,7 @@ public class EchoServer
     /** The server will listen on this port for client connections */
     public static final int SERVER_PORT = 7756;
     
-    private static List<ClientThread> clients;
+    private List<EchoThread> clients;
     
 public static String[][] usernames;
 public static boolean exiting = false;
@@ -31,35 +31,42 @@ public static boolean exiting = false;
      */
     public static void main(String[] args)
     {
-    	
-    	
+	    EchoServer server = new EchoServer();
+    	server.startServer();
+    	/*
     	usernames=new String[2][2];
     	usernames[0][0]="aj";
     	usernames[0][1]="jackie";
     	usernames[1][0]="sand";
-    	usernames[1][1]="love";
+    	usernames[1][1]="love";*/
     
-	try{
-	    // This basically just listens for new client connections
-	    final ServerSocket serverSock = new ServerSocket(SERVER_PORT);
-	    acceptClients(serverSock);
-	    
-	} catch (IOException io) {
-		System.err.println("Could not listen on port " + SERVER_PORT);
-		System.exit(1);
-	} catch(Exception e){
-	    System.err.println("Error: " + e.getMessage());
-	    e.printStackTrace(System.err);
-	}
+	
 
     }
 
-	public List<ClientThread> getClients() {
+    private void startServer(){
+    	clients = new ArrayList<EchoThread>();
+    	
+    	try{
+    	    // This basically just listens for new client connections
+    	    final ServerSocket serverSock = new ServerSocket(SERVER_PORT);
+    	    acceptClients(serverSock);
+    	    
+    	} catch (IOException io) {
+    		System.err.println("Could not listen on port " + SERVER_PORT);
+    		System.exit(1);
+    	} catch(Exception e){
+    	    System.err.println("Error: " + e.getMessage());
+    	    e.printStackTrace(System.err);
+    	}
+    }
+    
+	public List<EchoThread> getClients() {
 		return clients;
 	}
     
     
-    private static void acceptClients(ServerSocket serverSocket) {
+    private void acceptClients(ServerSocket serverSocket) {
     	// A simple infinite loop to accept connections
 	    Socket sock = null;
 	    Thread thread = null;
@@ -67,9 +74,9 @@ public static boolean exiting = false;
 	    
 	    while(true){
 	    	try {
-	    		sock = serverSocket.accept();     // Accept an incoming connection
+	    		sock = serverSocket.accept();     // Accept an incoming connection from CLIENT
 	    		System.out.println("Accepts: " + sock.getRemoteSocketAddress());
-	    		ClientThread client = new ClientThread(this, sock);
+	    		EchoThread client = new EchoThread(this, sock);
 	    		thread = new Thread(client);  // Create a thread to handle this connection
 	    		thread.start();                 // Fork the thread
 	    		clients.add(client);

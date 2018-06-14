@@ -8,6 +8,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
@@ -18,6 +19,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.PrintWriter;
+
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -30,11 +33,12 @@ import java.util.Scanner;
  * over the socket until the socket is closed.
  *
  */
-public class EchoThread extends Thread
+public class EchoThread implements Runnable
 {
 
-
-	private final Socket socket; // The socket that we'll be talking over
+	private PrintWriter clientOut;
+	private EchoServer server;
+	private Socket socket; // The socket that we'll be talking over
 	public String mPassword; // to store the user's input for password verification
 	public String mUsername;// to store the user's input for password verification
 	public String UserENCRYPTkey; // to compare the user's input for encryption key verification
@@ -52,24 +56,32 @@ public class EchoThread extends Thread
      * @param _socket The socket passed in from the server
      *
      */
-    public EchoThread(Socket _socket)
+    public EchoThread(EchoServer server, Socket _socket)
     {
-	socket = _socket;
+    	this.server = server;
+    	socket = _socket;
     }
+    
 
 
-    public void mfiles()
+    private PrintWriter getClientOut() {
+		return clientOut;
+	}
+
+
+
+	public void mfiles()
     {
     	if(mUsername.equals("aj"))
 		{
-			path1 = "C:\\Users\\antwaine\\Desktop\\ajlist1.txt";
-			path2 = "C:\\Users\\antwaine\\Desktop\\ajlist2.txt";
+			path1 = "C:\\Users\\Alex\\Documents\\java projects\\client file server\\ajlist1.txt";
+			path2 = "C:\\Users\\Alex\\Documents\\java projects\\client file server\\ajlist2.txt";
 			
 		}
 		if(mUsername.equals("jackie"))
 		{
-			path3 = "C:\\Users\\antwaine\\Desktop\\jackielist1.txt";
-	    	path4 = "C:\\Users\\antwaine\\Desktop\\jackielist2.txt";
+			path3 = "C:\\Users\\Alex\\Documents\\java projects\\client file server\\jackielist1.txt";
+	    	path4 = "C:\\Users\\Alex\\Documents\\java projects\\client file server\\jackielist2.txt";
 		}
     	
     }
@@ -83,9 +95,32 @@ public class EchoThread extends Thread
     {
     	
 	try{
-	    // Print incoming message
+	  //setup
+		this.clientOut = new PrintWriter(socket.getOutputStream(), false);
+		Scanner in = new Scanner(socket.getInputStream());
+		
+		while(!socket.isClosed()) {
+			if (in.hasNextLine()) {
+				String input = in.nextLine();
+				System.out.println(input); //to check that server received input, check server file console
+				
+				for (EchoThread thatClient : server.getClients()) {
+					PrintWriter thatClientOut = thatClient.getClientOut();
+					if (thatClientOut != null) {
+						thatClientOut.write(input);
+						thatClientOut.flush();
+					}
+				}
+			}
+			
+		}
+		in.close();
+		/*
+		// Print incoming message
 	    System.out.println("** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + " **");
 
+	    
+	    
 	    // set up I/O streams with the client
 	    final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
 	    final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
@@ -187,7 +222,7 @@ public class EchoThread extends Thread
 				output.writeObject(new Message(i.toString()));
 				}
 			}
-				else
+				else //jackie
 				{
 				for(String i:mList2)
 					{
@@ -196,6 +231,7 @@ public class EchoThread extends Thread
 				}
 					
 						break;
+						
 						//Encrypt files
 			case 2:
 					output.writeObject(new Message("Input secret key"));
@@ -243,26 +279,26 @@ public class EchoThread extends Thread
 				{
 						for(String i:encrypt)
 							{
-					
-							if(firsttime==0)
-							{
-								mList.clear();
-							}
-							mList.add(i);
-							firsttime++;
+						
+								if(firsttime==0)
+								{
+									mList.clear();
+								}
+								mList.add(i);
+								firsttime++;
 							}
 			}
-				else
+				else //jackie
 				{
 					for(String i:encrypt)
 					{
 			
-					if(firsttime==0)
-					{
-						mList2.clear();
-					}
-					mList2.add(i);
-					firsttime++;
+						if(firsttime==0)
+						{
+							mList2.clear();
+						}
+						mList2.add(i);
+						firsttime++;
 					}
 					
 					
@@ -415,7 +451,10 @@ public class EchoThread extends Thread
 	{
 	    System.err.println("Error: " + e.getMessage());
 	    e.printStackTrace(System.err);
-	    
+	  */  
+	} catch (IOException io) {
+		io.getMessage();
+		io.printStackTrace();
 	}
 
     }  //-- end run()
