@@ -38,84 +38,23 @@ public class EchoClient
 	 
 	 Scanner userInputScanner = new Scanner(System.in);
 	 System.out.println("What's your username?");
-	 readName = readSomeText();
+	 while (readName == null || readName.trim().equals("")) {
+			try{
+			    
+			    readName = userInputScanner.nextLine();
+			    if (readName.trim().equals(""))
+			    	System.out.println("Usernames must not contain whitespace. Please try again");
+				}
+			catch(Exception e){
+			    System.out.println( "error reading from keyboard");
+			    e.printStackTrace(System.err);
+				}
+ 	}
 	 
 	 EchoClient client = new EchoClient(readName, EchoServer.SERVER_PORT);
 	 client.startClient(userInputScanner);
-			 
-/* if(connect())
- {
-	 
-	
-	    // Set up I/O streams with the server
-	    final ObjectOutputStream output = new ObjectOutputStream(sock.getOutputStream());
-	    final ObjectInputStream input = new ObjectInputStream(sock.getInputStream());
 
-	    // loop to send messages
-	    Integer k=0;
-	    Message msg = null, resp = null;
-	    Message password= null,username = null;
-	    do{
-		// Read and send message.  Since the Message class
-		// implements the Serializable interface, the
-		// ObjectOutputStream "output" object automatically
-		// encodes the Message object into a format that can
-		// be transmitted over the socket to the server.
-	
 
-		
-		// Get ACK and print.  Since Message implements
-		// Serializable, the ObjectInputStream can
-		// automatically read this object off of the wire and
-		// encode it as a Message.  Note that we need to
-		// explicitly cast the return from readObject() to the
-		// type Message.
-		resp = (Message)input.readObject();
-		System.out.println("\nServer says: " + resp.theMessage + "\n");
-		if(resp!=null)
-		{
-		 
-			if(resp.theMessage.equals("Enter UserName"))
-			{
-				username=new Message(Username());
-				output.writeObject(username);
-			}
-			if(resp.theMessage.equals("Enter Password"))
-			{
-				password=new Message(Password());
-				output.writeObject(password);
-			}
-			if(resp.theMessage.equals("Select 4 to Exit"))
-			{
-				msg=new Message(Username());
-				output.writeObject(msg);
-			}
-			if(resp.theMessage.equals("Input secret key"))
-			{
-				msg=new Message(Username());
-				output.writeObject(msg);
-			}
-			if(resp.theMessage.equals("4"))
-			{
-				k=5;
-			}
-			else
-				continue;
-			}
-		
-		    }while(k<4);
-		    if(disconnect())
-		    {
-		    System.out.println("Exiting");
-		    // shut things down
-		    sock.close();
-		    }
-	
-		
-		
-	
-	
-	    } */ //end if(connect())
     }//-- end main(String[])
 
 
@@ -175,24 +114,6 @@ public class EchoClient
     }*/
    
    
-    public static String readSomeText()
-    {
-    	Scanner scan = new Scanner(System.in);
-    	String outVar = null;
-    	while (outVar == null || outVar.trim().equals("")) {
-			try{
-			    
-			    outVar = scan.nextLine();
-			    if (outVar.trim().equals(""))
-			    	System.out.println("Usernames must not contain whitespace. Please try again");
-				}
-			catch(Exception e){
-			    System.out.println( "error reading from keyboard");
-			    e.printStackTrace(System.err);
-				}
-    	}
-    	scan.close();
-    	return outVar;
-    } //-- end readSomeText()
+ 
     
 } //-- end class EchoClient
