@@ -52,7 +52,9 @@ public class ServerThread implements Runnable {
 					serverOut.println(userName + " > " + nextSend);
 					serverOut.flush();
 					}
-				}//end while	
+				}//end while
+				
+				serverIn.close();
 			} catch (IOException io) {
 				System.err.println(io.getMessage());
 			}

@@ -18,6 +18,7 @@ public class EchoServer
 {
     /** The server will listen on this port for client connections */
     public static final int SERVER_PORT = 7756;
+    private int serverPort;
     
     private List<EchoThread> clients;
     
@@ -29,9 +30,14 @@ public static boolean exiting = false;
      * client connections.
      *
      */
+
+	public EchoServer(int portNumber ) {
+		serverPort = portNumber;
+	}
+	
     public static void main(String[] args)
     {
-	    EchoServer server = new EchoServer();
+	    EchoServer server = new EchoServer(SERVER_PORT);
     	server.startServer();
     	/*
     	usernames=new String[2][2];
@@ -49,11 +55,11 @@ public static boolean exiting = false;
     	
     	try{
     	    // This basically just listens for new client connections
-    	    final ServerSocket serverSock = new ServerSocket(SERVER_PORT);
+    	    final ServerSocket serverSock = new ServerSocket(serverPort);
     	    acceptClients(serverSock);
     	    
     	} catch (IOException io) {
-    		System.err.println("Could not listen on port " + SERVER_PORT);
+    		System.err.println("Could not listen on port " + serverPort);
     		System.exit(1);
     	} catch(Exception e){
     	    System.err.println("Error: " + e.getMessage());

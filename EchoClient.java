@@ -51,17 +51,18 @@ public class EchoClient
 				}
  	}
 	 
-	 EchoClient client = new EchoClient(readName, EchoServer.SERVER_PORT);
+	 EchoClient client = new EchoClient(readName, host, EchoServer.SERVER_PORT);
 	 client.startClient(userInputScanner);
 
 
     }//-- end main(String[])
 
 
-    private EchoClient(String userName, int portNumber)
+    private EchoClient(String userName, String host, int portNumber)
     {
     this.userName = userName;
     serverPort = portNumber;
+    serverHost = host;
     }
     
     private void startClient(Scanner scan) {
@@ -71,7 +72,7 @@ public class EchoClient
     	try{
     	    // Connect to the specified server
     		
-    	    final Socket sock = new Socket("localhost", EchoServer.SERVER_PORT);
+    	    final Socket sock = new Socket(serverHost, serverPort);
     	    Thread.sleep(1000);
     	    System.out.println("Connected to " + host + " on port " + EchoServer.SERVER_PORT);
     	    

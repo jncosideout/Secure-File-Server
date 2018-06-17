@@ -39,6 +39,7 @@ public class EchoThread implements Runnable
 	private PrintWriter clientOut;
 	private EchoServer server;
 	private Socket socket; // The socket that we'll be talking over
+	
 	public String mPassword; // to store the user's input for password verification
 	public String mUsername;// to store the user's input for password verification
 	public String UserENCRYPTkey; // to compare the user's input for encryption key verification
@@ -102,12 +103,13 @@ public class EchoThread implements Runnable
 		while(!socket.isClosed()) {
 			if (in.hasNextLine()) {
 				String input = in.nextLine();
-				System.out.println(input); //to check that server received input, check server file console
-				
+                // NOTE: if you want to check server can read input, 
+				//uncomment next line and check server file console.
+				//System.out.println(input); 
 				for (EchoThread thatClient : server.getClients()) {
 					PrintWriter thatClientOut = thatClient.getClientOut();
 					if (thatClientOut != null) {
-						thatClientOut.write(input);
+						thatClientOut.write(input + "\r\n");
 						thatClientOut.flush();
 					}
 				}
@@ -446,16 +448,14 @@ public class EchoThread implements Runnable
 	    System.out.println("** Closing connection with " + socket.getInetAddress() + ":" + socket.getPort() + " **");
 	    socket.close();
 
-	}
-	catch(Exception e)
-	{
+	*/
+	} catch (IOException io) {
+	    System.err.println("Error: " + io.getMessage());
+			io.printStackTrace();
+	} catch(Exception e) {
 	    System.err.println("Error: " + e.getMessage());
 	    e.printStackTrace(System.err);
-	  */  
-	} catch (IOException io) {
-		io.getMessage();
-		io.printStackTrace();
-	}
+	} 
 
     }  //-- end run()
    
@@ -505,27 +505,27 @@ public class EchoThread implements Runnable
     }     
     }
 
-public void scanFile(String path,ArrayList<String> list)// reads text files into array
-{
-    try(BufferedReader br = new BufferedReader(new FileReader(path)))
-    {
-        StringBuilder sb = new StringBuilder();
-        String line = br.readLine();
-        while (line != null) {
-            sb.append(line);
-            sb.append(System.lineSeparator());
-            line = br.readLine();
-        }
-        String everything = sb.toString();
-        list.add(everything) ;
-      //  System.out.print(everything);
-    } catch (FileNotFoundException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	} catch (IOException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
+	public void scanFile(String path,ArrayList<String> list)// reads text files into array
+	{
+	    try(BufferedReader br = new BufferedReader(new FileReader(path)))
+	    {
+	        StringBuilder sb = new StringBuilder();
+	        String line = br.readLine();
+	        while (line != null) {
+	            sb.append(line);
+	            sb.append(System.lineSeparator());
+	            line = br.readLine();
+	        }
+	        String everything = sb.toString();
+	        list.add(everything) ;
+	      //  System.out.print(everything);
+	    } catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
-}
 } //-- end class EchoThread
 
