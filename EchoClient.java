@@ -43,7 +43,7 @@ public class EchoClient
 			    
 			    readName = userInputScanner.nextLine();
 			    if (readName.trim().equals(""))
-			    	System.out.println("Usernames must not contain whitespace. Please try again");
+			    	System.out.println("Usernames must not be blank. Please try again");
 				}
 			catch(Exception e){
 			    System.out.println( "error reading from keyboard");
@@ -54,6 +54,8 @@ public class EchoClient
 	 EchoClient client = new EchoClient(readName, host, EchoServer.SERVER_PORT);
 	 client.startClient(userInputScanner);
 
+	 userInputScanner.close();
+	 
 
     }//-- end main(String[])
 
@@ -83,9 +85,15 @@ public class EchoClient
     	    while (serverAccessThread.isAlive())
     	    {
     	    	if (scan.hasNextLine() ) {
+    	    		if (scan.hasNext("goodbye")) {
+    	    			break;
+    	    		}
     	    		serverThread.addNextMessage(scan.nextLine());
     	    	}
     	    }
+    	    System.out.println("Leaving");
+    	    sock.close();
+    	    
 	    } catch(IOException io) {
 			System.out.println("Error: " + io.getMessage());
 			io.printStackTrace();
@@ -96,6 +104,8 @@ public class EchoClient
 			System.err.println("Error: " + e.getMessage());
 		    e.printStackTrace(System.err);
 		}   
+    	
+    	
     }
     
     /**
