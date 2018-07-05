@@ -1,8 +1,20 @@
 package myClient;
 
 import java.net.Socket;             // Used to connect to the server
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.security.cert.Certificate;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.SecureRandom;
+import javax.net.ssl.*;
 import java.io.ObjectInputStream;   // Used to read objects sent from the server
 import java.io.ObjectOutputStream;  // Used to write objects to the server
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;      // Needed to read from the console
 import java.io.InputStreamReader;   // Needed to read from the console
 
@@ -69,7 +81,57 @@ public class EchoClient
     
     private void startClient(Scanner scan) {
     	
-    	 
+    	String ksName; //file path of keystore
+			System.out.println("What is the keystore file path?");
+			ksName = scan.nextLine();
+    	char[] spass;  // password for keystore
+    		spass = System.console().readPassword("Input keystore password");
+    	String alias;
+    		System.out.println("What is the alias?");
+    		alias = scan.nextLine();
+    	char[] kpass;  // password for private key
+    		kpass = System.console().readPassword("Input key password for %s", alias);
+    	
+    	 try {
+			SSLContext sc = SSLContext.getInstance("TLSv1.2");
+			
+			KeyStore ks = KeyStore.getInstance("JKS");
+			FileInputStream ksfis = new FileInputStream(ksName);
+			BufferedInputStream ksbufin = new BufferedInputStream(ksfis);
+			
+			ks.load(ksbufin, spass);
+
+			KeyManagerFactory kmf = KeyManagerFactory.getInstance("Sunx509");
+			kmf.init(ks, spass);
+			TrustManagerFactory tmf = TrustManagerFactory.getInstance("PKIX");
+			tmf.init(ks);
+			
+			SecureRandom random = SecureRandom.getInstanceStrong();
+			sc.init(kmf.getKeyManagers(), tmf.getTrustManagers(), random);
+    	 } catch (NoSuchAlgorithmException e1) {
+			// TODO Auto-generated catch block
+			System.err.println(e1.getMessage());
+			e1.printStackTrace();
+		} catch (KeyStoreException e2) {
+			System.err.println(e2.getMessage());
+			e2.printStackTrace();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			System.err.println(e.getMessage());
+			e.printStackTrace();
+		} catch (CertificateException e) {
+			System.err.println(e.getMessage());
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnrecoverableKeyException e) {
+			System.err.println(e.getMessage());
+			e.printStackTrace();
+		} catch (KeyManagementException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
    	 
     	try{
     	    // Connect to the specified server
