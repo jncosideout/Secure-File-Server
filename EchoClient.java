@@ -1,6 +1,7 @@
 package myClient;
 
 import java.net.Socket;             // Used to connect to the server
+
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
@@ -9,7 +10,10 @@ import java.security.cert.Certificate;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.SecureRandom;
+
 import javax.net.ssl.*;
+
+import java.io.Console;				//used for system.console.readPassword() which isn't working
 import java.io.ObjectInputStream;   // Used to read objects sent from the server
 import java.io.ObjectOutputStream;  // Used to write objects to the server
 import java.io.FileInputStream;
@@ -82,29 +86,54 @@ public class EchoClient
     private void startClient(Scanner scan) {
     	
     	String ksName; //file path of keystore
-			System.out.println("What is the keystore file path?");
-			ksName = scan.nextLine();
-    	char[] spass;  // password for keystore
-    		spass = System.console().readPassword("Input keystore password");
-    	String alias;
-    		System.out.println("What is the alias?");
-    		alias = scan.nextLine();
-    	char[] kpass;  // password for private key
-    		kpass = System.console().readPassword("Input key password for %s", alias);
+		//System.out.println("What is the keystore file path?");
+		ksName = "C:\\temp-openssl-32build\\clientKeystore\\clientkeystore.jks"; 			
+				//scan.nextLine();
+
+		//System.out.println("Input keystore password");
+		String	storePass = "";
+    	char[] spass = storePass.toCharArray();  				// password for keystore
+    	
+    	String tsName; //file path of trust store
+		//System.out.println("What is the trust store file path?");
+		tsName = "C:\\temp-openssl-32build\\clientKeystore\\clientTrustStore.jks"; 			
+				//scan.nextLine();
+
+		//System.out.println("Input keystore password");
+		String	trustStorePass = "";
+    	char[] tspass = trustStorePass.toCharArray();  				// password for TrustStore
+     				
+    	/*
+		System.out.println("What is the alias?");
+		String alias = scan.nextLine();
+		
+		//System.out.println("Input key password for %s", alias);
+		String keypass = "client1";
+    	char[] kpass = keypass.toCharArray();  // password for private key
+    	*/
     	
     	 try {
 			SSLContext sc = SSLContext.getInstance("TLSv1.2");
 			
+			//initialize KeyStore
 			KeyStore ks = KeyStore.getInstance("JKS");
 			FileInputStream ksfis = new FileInputStream(ksName);
 			BufferedInputStream ksbufin = new BufferedInputStream(ksfis);
 			
 			ks.load(ksbufin, spass);
+			
+			//initialize TrustStore
+			KeyStore ts = KeyStore.getInstance("JKS");
+			FileInputStream tsfis = new FileInputStream(tsName);
+			BufferedInputStream tsbufin = new BufferedInputStream(tsfis);
+			
+			ts.load(tsbufin, tspass);
 
+			//init factories
 			KeyManagerFactory kmf = KeyManagerFactory.getInstance("Sunx509");
 			kmf.init(ks, spass);
 			TrustManagerFactory tmf = TrustManagerFactory.getInstance("PKIX");
-			tmf.init(ks);
+			tmf.init(ts);
 			
 			SecureRandom random = SecureRandom.getInstanceStrong();
 			sc.init(kmf.getKeyManagers(), tmf.getTrustManagers(), random);
