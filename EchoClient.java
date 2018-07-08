@@ -87,30 +87,30 @@ public class EchoClient
     	
     	String ksName; //file path of keystore
 		//System.out.println("What is the keystore file path?");
-		ksName = "C:\\temp-openssl-32build\\clientKeystore\\clientkeystore.jks"; 			
+		ksName = ""; 			
 				//scan.nextLine();
 
-		//System.out.println("Input keystore password");
+		//System.out.println("Input client keystore password");
 		String	storePass = "";
     	char[] spass = storePass.toCharArray();  				// password for keystore
     	
     	String tsName; //file path of trust store
 		//System.out.println("What is the trust store file path?");
-		tsName = "C:\\temp-openssl-32build\\clientKeystore\\clientTrustStore.jks"; 			
+		tsName = ""; 			
 				//scan.nextLine();
 
 		//System.out.println("Input keystore password");
 		String	trustStorePass = "";
     	char[] tspass = trustStorePass.toCharArray();  				// password for TrustStore
      				
-    	/*
-		System.out.println("What is the alias?");
-		String alias = scan.nextLine();
+    	
+//		System.out.println("What is the alias?");
+//		String alias = scan.nextLine();
 		
 		//System.out.println("Input key password for %s", alias);
-		String keypass = "client1";
+		String keypass = "";
     	char[] kpass = keypass.toCharArray();  // password for private key
-    	*/
+    	
     	
     	 try {
 			SSLContext sc = SSLContext.getInstance("TLSv1.2");
@@ -128,10 +128,10 @@ public class EchoClient
 			BufferedInputStream tsbufin = new BufferedInputStream(tsfis);
 			
 			ts.load(tsbufin, tspass);
-
+ 
 			//init factories
 			KeyManagerFactory kmf = KeyManagerFactory.getInstance("Sunx509");
-			kmf.init(ks, spass);
+			kmf.init(ks, kpass);//uses KEY pass not STORE pass
 			TrustManagerFactory tmf = TrustManagerFactory.getInstance("PKIX");
 			tmf.init(ts);
 			
@@ -157,7 +157,8 @@ public class EchoClient
 		} catch (UnrecoverableKeyException e) {
 			System.err.println(e.getMessage());
 			e.printStackTrace();
-		} catch (KeyManagementException e) {
+		}
+    	 catch (KeyManagementException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
