@@ -5,14 +5,16 @@ import java.net.Socket;
 import java.util.LinkedList;
 import java.util.Scanner;
 
+import javax.net.ssl.SSLSocket;
+
 public class ServerThread implements Runnable {
 
-		private Socket socket;
+		private SSLSocket socket;
 		private String userName;
 		private final LinkedList<String> messagesToSend;
 		private boolean hasMessages = false;
 		
-		public ServerThread(Socket socket, String userName) {
+		public ServerThread(SSLSocket socket, String userName) {
 			super();
 			this.socket = socket;
 			this.userName = userName;
@@ -51,6 +53,15 @@ public class ServerThread implements Runnable {
 						}
 					serverOut.println(userName + " > " + nextSend);
 					serverOut.flush();
+					
+					/*make sure 
+					 * there were 
+					 * no surprises
+					 */
+					if  (serverOut.checkError()) {
+						System.err.println("ServerThread: java.io.PrintWriter error");
+					}
+						
 					}
 				}//end while
 				

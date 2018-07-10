@@ -28,6 +28,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
 
+import javax.net.ssl.SSLSocket;
+
 /**
  * A simple server thread.  This class just echoes the messages sent
  * over the socket until the socket is closed.
@@ -38,7 +40,7 @@ public class EchoThread implements Runnable
 
 	private PrintWriter clientOut;
 	private EchoServer server;
-	private Socket socket; // The socket that we'll be talking over
+	private SSLSocket socket; // The socket that we'll be talking over
 	
 	public String mPassword; // to store the user's input for password verification
 	public String mUsername;// to store the user's input for password verification
@@ -57,7 +59,7 @@ public class EchoThread implements Runnable
      * @param _socket The socket passed in from the server
      *
      */
-    public EchoThread(EchoServer server, Socket _socket)
+    public EchoThread(EchoServer server, SSLSocket _socket)
     {
     	this.server = server;
     	socket = _socket;

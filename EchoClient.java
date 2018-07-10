@@ -87,28 +87,28 @@ public class EchoClient
     	
     	String ksName; //file path of keystore
 		//System.out.println("What is the keystore file path?");
-		ksName = ""; 			
+		ksName = "C:\\temp-openssl-32build\\clientKeystore\\clientkeystore.jks"; 			
 				//scan.nextLine();
 
-		//System.out.println("Input client keystore password");
-		String	storePass = "";
+		//System.out.println("Input keystore password");
+		String	storePass = "keYs4clianTs";
     	char[] spass = storePass.toCharArray();  				// password for keystore
     	
     	String tsName; //file path of trust store
 		//System.out.println("What is the trust store file path?");
-		tsName = ""; 			
+		tsName = "C:\\temp-openssl-32build\\clientKeystore\\clientTrustStore.jks"; 			
 				//scan.nextLine();
 
 		//System.out.println("Input keystore password");
-		String	trustStorePass = "";
+		String	trustStorePass = "clianTtrUst";
     	char[] tspass = trustStorePass.toCharArray();  				// password for TrustStore
      				
     	
-//		System.out.println("What is the alias?");
-//		String alias = scan.nextLine();
+		System.out.println("What is the alias?");
+		String alias = scan.nextLine();
 		
 		//System.out.println("Input key password for %s", alias);
-		String keypass = "";
+		String keypass = "client1";
     	char[] kpass = keypass.toCharArray();  // password for private key
     	
     	
@@ -128,16 +128,73 @@ public class EchoClient
 			BufferedInputStream tsbufin = new BufferedInputStream(tsfis);
 			
 			ts.load(tsbufin, tspass);
- 
+
 			//init factories
 			KeyManagerFactory kmf = KeyManagerFactory.getInstance("Sunx509");
-			kmf.init(ks, kpass);//uses KEY pass not STORE pass
+			kmf.init(ks, kpass);
 			TrustManagerFactory tmf = TrustManagerFactory.getInstance("PKIX");
 			tmf.init(ts);
 			
 			SecureRandom random = SecureRandom.getInstanceStrong();
 			sc.init(kmf.getKeyManagers(), tmf.getTrustManagers(), random);
-    	 } catch (NoSuchAlgorithmException e1) {
+			
+//			SSLParameters params = sc.getSupportedSSLParameters();
+//			String[] ciphers = params.getCipherSuites();
+//			String[] protocols = params.getProtocols();
+//			System.out.println("supported cipher suites are: \n");
+//			for (String c : ciphers) {
+//				System.out.println(c + "\n");
+//			}
+//			System.out.println("Supported protocols are: \n");
+//			for (String p : protocols) {
+//				System.out.println(p +"\n");
+//			}
+			
+//			System.out.println(x);
+//			System.out.println("client session : " + sc.getClientSessionContext());
+			
+			
+			SSLSocketFactory factory = sc.getSocketFactory();
+			
+			try{
+	    	    // Connect to the specified server
+	    		
+	    	    SSLSocket sock = (SSLSocket) factory.createSocket(serverHost, serverPort);
+    			String[] suites = {"TLS_RSA_WITH_AES_128_CBC_SHA256"};
+    			sock.setEnabledCipherSuites(suites);
+    			
+	    	    Thread.sleep(1000);
+	    	    System.out.println("Connected to " + host + " on port " + EchoServer.SERVER_PORT);
+	    	    
+	    	    ServerThread serverThread = new ServerThread(sock, userName);
+	    	    Thread serverAccessThread = new Thread(serverThread);
+	    	    serverAccessThread.start();
+	    	    
+	    	    while (serverAccessThread.isAlive())
+	    	    {
+	    	    	if (scan.hasNextLine() ) {
+	    	    		if (scan.hasNext("goodbye")) {
+	    	    			break;
+	    	    		}
+	    	    		serverThread.addNextMessage(scan.nextLine());
+	    	    	}
+	    	    }
+	    	    System.out.println("Leaving");
+	    	    sock.close();
+	    	    
+		    } catch(IOException io) {
+				System.out.println("Error: " + io.getMessage());
+				io.printStackTrace();
+			} catch (InterruptedException intE) {
+				System.err.println("Error: " + intE.getMessage());
+				intE.printStackTrace();
+			} catch(Exception e) {
+				System.err.println("Error: " + e.getMessage());
+			    e.printStackTrace(System.err);
+			}   
+			
+			
+    	} catch (NoSuchAlgorithmException e1) {
 			// TODO Auto-generated catch block
 			System.err.println(e1.getMessage());
 			e1.printStackTrace();
@@ -157,45 +214,12 @@ public class EchoClient
 		} catch (UnrecoverableKeyException e) {
 			System.err.println(e.getMessage());
 			e.printStackTrace();
-		}
-    	 catch (KeyManagementException e) {
+		} catch (KeyManagementException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
    	 
-    	try{
-    	    // Connect to the specified server
-    		
-    	    final Socket sock = new Socket(serverHost, serverPort);
-    	    Thread.sleep(1000);
-    	    System.out.println("Connected to " + host + " on port " + EchoServer.SERVER_PORT);
-    	    
-    	    ServerThread serverThread = new ServerThread(sock, userName);
-    	    Thread serverAccessThread = new Thread(serverThread);
-    	    serverAccessThread.start();
-    	    
-    	    while (serverAccessThread.isAlive())
-    	    {
-    	    	if (scan.hasNextLine() ) {
-    	    		if (scan.hasNext("goodbye")) {
-    	    			break;
-    	    		}
-    	    		serverThread.addNextMessage(scan.nextLine());
-    	    	}
-    	    }
-    	    System.out.println("Leaving");
-    	    sock.close();
-    	    
-	    } catch(IOException io) {
-			System.out.println("Error: " + io.getMessage());
-			io.printStackTrace();
-		} catch (InterruptedException intE) {
-			System.err.println("Error: " + intE.getMessage());
-			intE.printStackTrace();
-		} catch(Exception e) {
-			System.err.println("Error: " + e.getMessage());
-		    e.printStackTrace(System.err);
-		}   
+    	
     	
     	
     }
