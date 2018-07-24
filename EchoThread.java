@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
 
+import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
 /**
@@ -35,7 +36,7 @@ import javax.net.ssl.SSLSocket;
  * over the socket until the socket is closed.
  *
  */
-public class EchoThread implements Runnable
+public class EchoThread extends Thread
 {
 
 	private PrintWriter clientOut;
@@ -96,29 +97,48 @@ public class EchoThread implements Runnable
      */
     public void run()
     {
-    	
+		socket.setEnabledCipherSuites(socket.getSupportedCipherSuites());
+
 	try{
-	  //setup
+		//start handshake
+		socket.startHandshake();
+		
+		//get session after connection is established
+		SSLSession session = socket.getSession();
+		
+		System.out.println("Session details: ");
+		System.out.println("\tProtocol: " + session.getProtocol());
+		System.out.println("\tCipher suite: " + session.getCipherSuite());
+		
+	  //setup i/o
 		this.clientOut = new PrintWriter(socket.getOutputStream(), false);
 		Scanner in = new Scanner(socket.getInputStream());
 		
 		while(!socket.isClosed()) {
+			 
 			if (in.hasNextLine()) {
 				String input = in.nextLine();
                 // NOTE: if you want to check server can read input, 
 				//uncomment next line and check server file console.
-				//System.out.println(input); 
+				System.out.println(input);  
 				for (EchoThread thatClient : server.getClients()) {
 					PrintWriter thatClientOut = thatClient.getClientOut();
 					if (thatClientOut != null) {
 						thatClientOut.write(input + "\r\n");
 						thatClientOut.flush();
+						/*make sure  there were 
+						 * no surprises */
+						if  (thatClientOut.checkError()) {
+							System.err.println("EchoThread: java.io.PrintWriter error");
+						}
 					}
 				}
 			}
 			
 		}
+		socket.close();
 		in.close();
+		join();
 		/*
 		// Print incoming message
 	    System.out.println("** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + " **");

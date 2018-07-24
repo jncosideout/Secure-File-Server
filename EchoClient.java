@@ -41,7 +41,7 @@ public class EchoClient
      *
      */
 	
-	public static final String host = "localhost";
+	public static final String host = "localhost"; 
 	
 	private String userName;
 	private String serverHost;
@@ -104,8 +104,8 @@ public class EchoClient
     	char[] tspass = trustStorePass.toCharArray();  				// password for TrustStore
      				
     	
-		System.out.println("What is the alias?");
-		String alias = scan.nextLine();
+//		System.out.println("What is the alias?");
+//		String alias = scan.nextLine();
 		
 		//System.out.println("Input key password for %s", alias);
 		String keypass = "client1";
@@ -121,6 +121,7 @@ public class EchoClient
 			BufferedInputStream ksbufin = new BufferedInputStream(ksfis);
 			
 			ks.load(ksbufin, spass);
+			ksfis.close();
 			
 			//initialize TrustStore
 			KeyStore ts = KeyStore.getInstance("JKS");
@@ -128,6 +129,7 @@ public class EchoClient
 			BufferedInputStream tsbufin = new BufferedInputStream(tsfis);
 			
 			ts.load(tsbufin, tspass);
+			tsfis.close();
 
 			//init factories
 			KeyManagerFactory kmf = KeyManagerFactory.getInstance("Sunx509");
@@ -160,8 +162,8 @@ public class EchoClient
 	    	    // Connect to the specified server
 	    		
 	    	    SSLSocket sock = (SSLSocket) factory.createSocket(serverHost, serverPort);
-    			String[] suites = {"TLS_RSA_WITH_AES_128_CBC_SHA256"};
-    			sock.setEnabledCipherSuites(suites);
+//    			String[] suites = {"TLS_RSA_WITH_AES_128_CBC_SHA256"};
+//    			sock.setEnabledCipherSuites(suites);
     			
 	    	    Thread.sleep(1000);
 	    	    System.out.println("Connected to " + host + " on port " + EchoServer.SERVER_PORT);
@@ -174,13 +176,15 @@ public class EchoClient
 	    	    {
 	    	    	if (scan.hasNextLine() ) {
 	    	    		if (scan.hasNext("goodbye")) {
+	    	    			sock.close();
+	    		    	    System.out.println("Leaving chat");
 	    	    			break;
 	    	    		}
 	    	    		serverThread.addNextMessage(scan.nextLine());
 	    	    	}
 	    	    }
-	    	    System.out.println("Leaving");
-	    	    sock.close();
+	    	    
+	    	    serverAccessThread.join();
 	    	    
 		    } catch(IOException io) {
 				System.out.println("Error: " + io.getMessage());
