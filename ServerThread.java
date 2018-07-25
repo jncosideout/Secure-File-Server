@@ -5,7 +5,6 @@ import java.net.Socket;
 import java.util.LinkedList;
 import java.util.Scanner;
 
-import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
 public class ServerThread implements Runnable {
@@ -30,26 +29,12 @@ public class ServerThread implements Runnable {
 		}
 		
 		public void run(){
+			System.out.println("Welcome " + userName);
 			
-			socket.setEnabledCipherSuites(socket.getSupportedCipherSuites());
-
+			System.out.println("Local port: " + socket.getLocalPort());
+			System.out.println("Server = " + socket.getRemoteSocketAddress() + ":" + socket.getPort());
+			
 			try {
-				System.out.println("Welcome " + userName);
-				
-				System.out.println("Local port: " + socket.getLocalPort());
-				System.out.println("Server = " + socket.getRemoteSocketAddress() + ":" + socket.getPort());
-				
-				//start handshake
-				socket.startHandshake();
-				
-				//get session after connection is established
-				SSLSession session = socket.getSession();
-				
-				System.out.println("Session details: ");
-				System.out.println("\tProtocol: " + session.getProtocol());
-				System.out.println("\tCipher suite: " + session.getCipherSuite());
-				
-				//setup i/o
 				PrintWriter serverOut = new PrintWriter(socket.getOutputStream(), false);
 				InputStream serverInStream = socket.getInputStream();
 				Scanner serverIn = new Scanner(serverInStream);
@@ -69,13 +54,13 @@ public class ServerThread implements Runnable {
 					serverOut.println(userName + " > " + nextSend);
 					serverOut.flush();
 					
-						/*make sure 
-						 * there were 
-						 * no surprises
-						 */
-						if  (serverOut.checkError()) {
-							System.err.println("ServerThread: java.io.PrintWriter error");
-						}
+					/*make sure 
+					 * there were 
+					 * no surprises
+					 */
+					if  (serverOut.checkError()) {
+						System.err.println("ServerThread: java.io.PrintWriter error");
+					}
 						
 					}
 				}//end while

@@ -14,6 +14,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;   // For reading Java objects off of the wire
 import java.io.ObjectOutputStream;  // For writing Java objects to the wire
+import java.io.OutputStreamWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -39,7 +40,7 @@ import javax.net.ssl.SSLSocket;
 public class EchoThread extends Thread
 {
 
-	private PrintWriter clientOut;
+	private BufferedWriter clientOut;
 	private EchoServer server;
 	private SSLSocket socket; // The socket that we'll be talking over
 	
@@ -68,7 +69,7 @@ public class EchoThread extends Thread
     
 
 
-    private PrintWriter getClientOut() {
+    private BufferedWriter getClientOut() {
 		return clientOut;
 	}
 
@@ -111,7 +112,7 @@ public class EchoThread extends Thread
 		System.out.println("\tCipher suite: " + session.getCipherSuite());
 		
 	  //setup i/o
-		this.clientOut = new PrintWriter(socket.getOutputStream(), false);
+		this.clientOut = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
 		Scanner in = new Scanner(socket.getInputStream());
 		
 		while(!socket.isClosed()) {
@@ -120,16 +121,23 @@ public class EchoThread extends Thread
 				String input = in.nextLine();
                 // NOTE: if you want to check server can read input, 
 				//uncomment next line and check server file console.
-				System.out.println(input);  
+				System.out.println(input); 
 				for (EchoThread thatClient : server.getClients()) {
-					PrintWriter thatClientOut = thatClient.getClientOut();
+					BufferedWriter thatClientOut = thatClient.getClientOut();
+					
 					if (thatClientOut != null) {
-						thatClientOut.write(input + "\r\n");
-						thatClientOut.flush();
-						/*make sure  there were 
-						 * no surprises */
-						if  (thatClientOut.checkError()) {
-							System.err.println("EchoThread: java.io.PrintWriter error");
+						
+						try {
+							thatClientOut.write(input + "\r\n");
+							thatClientOut.flush();
+							/*make sure  there were 
+							 * no surprises */
+							//						if  (thatClientOut()) {
+							//							System.err.println("EchoThread: java.io.BufferedWriter error");
+							//						}
+						} catch (Exception e) {
+							// TODO: handle exception
+							e.printStackTrace();
 						}
 					}
 				}
