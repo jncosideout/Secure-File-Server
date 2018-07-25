@@ -112,7 +112,7 @@ public class EchoThread extends Thread
 		System.out.println("\tCipher suite: " + session.getCipherSuite());
 		
 	  //setup i/o
-		this.clientOut = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+		this.clientOut = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())); 
 		Scanner in = new Scanner(socket.getInputStream());
 		
 		while(!socket.isClosed()) {

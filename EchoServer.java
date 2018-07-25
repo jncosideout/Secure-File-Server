@@ -53,7 +53,7 @@ public static boolean exiting = false;
 
 	public EchoServer(int portNumber ) {
 		serverPort = portNumber;
-	} 
+	}
 	
     public static void main(String[] args)
     {
@@ -110,6 +110,7 @@ public static boolean exiting = false;
     			BufferedInputStream ksbufin = new BufferedInputStream(ksfis);
     			
     			ks.load(ksbufin, spass);
+    			ksfis.close();
     			
     			//initialize TrustStore
     			KeyStore ts = KeyStore.getInstance("JKS");
@@ -117,6 +118,7 @@ public static boolean exiting = false;
     			BufferedInputStream tsbufin = new BufferedInputStream(tsfis);
     			
     			ts.load(tsbufin, tspass);
+    			tsfis.close();
 
     			//init factories
     			KeyManagerFactory kmf = KeyManagerFactory.getInstance("Sunx509");
@@ -150,8 +152,8 @@ public static boolean exiting = false;
     			SSLServerSocketFactory sslServSockFact = sc.getServerSocketFactory();
     			SSLServerSocket serverSock = (SSLServerSocket) sslServSockFact.createServerSocket(serverPort);
     			
-    			String[] suites = {"TLS_RSA_WITH_AES_128_CBC_SHA256"};
-    			serverSock.setEnabledCipherSuites(suites);
+//    			String[] suites = {"TLS_RSA_WITH_AES_128_CBC_SHA256"};
+//    			serverSock.setEnabledCipherSuites(suites);
     			
     	    acceptClients(serverSock);
     	    
@@ -192,7 +194,7 @@ public static boolean exiting = false;
     private void acceptClients(SSLServerSocket serverSocket) {
     	// A simple infinite loop to accept connections
 	    SSLSocket sock = null;
-	    Thread thread = null;
+	    //Thread thread = null;
 	    System.out.println("Server starts port  " + serverSocket.getLocalSocketAddress());
 
     	
@@ -202,9 +204,9 @@ public static boolean exiting = false;
 				    		sock = (SSLSocket) serverSocket.accept();     // Accept an incoming connection from CLIENT
 				    		System.out.println("Accepts: " + sock.getRemoteSocketAddress());
 				    		EchoThread client = new EchoThread(this, sock);
-				    		thread = new Thread(client);  // Create a thread to handle this connection
-				    		thread.start();                 // Fork the thread
+				    		client.start();                 // Fork the thread
 				    		clients.add(client);
+				    		
 				    	} catch (IOException io) {
 				    		System.out.println("Accept failed on " + SERVER_PORT);
 				    		io.printStackTrace();
