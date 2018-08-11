@@ -189,6 +189,10 @@ public static boolean exiting = false;
 	public List<EchoThread> getClients() {
 		return clients;
 	}
+	
+	public void removeClient(EchoThread et) {
+		clients.remove(et);
+	}
     
     
     private void acceptClients(SSLServerSocket serverSocket) {

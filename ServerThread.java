@@ -81,6 +81,8 @@ public class ServerThread implements Runnable {
 				}//end while
 				
 				serverIn.close();
+				System.out.println("after ServerThread serverIn.close");
+				
 			} catch (IOException io) {
 				System.err.println(io.getMessage());
 			}

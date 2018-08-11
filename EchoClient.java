@@ -87,7 +87,7 @@ public class EchoClient
     	
     	String ksName; //file path of keystore
 		//System.out.println("What is the keystore file path?");
-		ksName = ""; 			
+		ksName = "C:\\temp-openssl-32build\\clientKeystore\\clientkeystore.jks"; 			
 				//scan.nextLine();
 
 		//System.out.println("Input keystore password");
@@ -96,7 +96,7 @@ public class EchoClient
     	
     	String tsName; //file path of trust store
 		//System.out.println("What is the trust store file path?");
-		tsName = ""; 			
+		tsName = "C:\\temp-openssl-32build\\clientKeystore\\clientTrustStore.jks"; 			
 				//scan.nextLine();
 
 		//System.out.println("Input keystore password");
@@ -133,7 +133,7 @@ public class EchoClient
 
 			//init factories
 			KeyManagerFactory kmf = KeyManagerFactory.getInstance("Sunx509");
-			kmf.init(ks, kpass);			//uses KEY pass not STORE pass
+			kmf.init(ks, kpass);
 			TrustManagerFactory tmf = TrustManagerFactory.getInstance("PKIX");
 			tmf.init(ts);
 			
