@@ -1,7 +1,9 @@
+
 package ExecuteBat;
 
 import java.io.*;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This class can be used to execute a system command from a Java application.
@@ -35,9 +37,17 @@ import java.util.List;
 public class SystemCommandExecutor
 {
   private List<String> commandInformation;
-  private String adminPassword;
-  private ThreadedStreamHandler inputStreamHandler;
+  private KeytoolStreamHandler inputStreamHandler;
   private ThreadedStreamHandler errorStreamHandler;
+  
+  private String[] inputVars = null;
+ 
+  private String commonName = null;
+  private String orgU = null;
+  private String org = null;
+  private String local = null;
+  private String state = null;
+  private String country = null;
   
   /**
    * Pass in the system command you want to run as a List of Strings, as shown here:
@@ -61,17 +71,45 @@ public class SystemCommandExecutor
   {
     if (commandInformation==null) throw new NullPointerException("The commandInformation is required.");
     this.commandInformation = commandInformation;
-    this.adminPassword = null;
+    
+  //setup for eventual questions
+//  System.out.println("Enter common name"));
+//	String commonName = userInput.nextLine();
+//	System.out.println("Enter name of your organizational unit"));
+//	String orgU = userInput.nextLine();
+//	System.out.println("name of your organization"));
+//	String org = userInput.nextLine();
+//	System.out.println("name of your City or Locality"));
+//	String local = userInput.nextLine();
+//	System.out.println("name of your State or Province"));
+//	String state = userInput.nextLine();
+//	System.out.println("Enter two-letter country code"));
+//	String country = userInput.nextLine();
+  
+    commonName = "testName";
+	orgU = "testOrgU";
+	org = "testOrg";
+	local = "testLocality";
+	state = "testState";
+	country = "TC";
+	
+    inputVars = new String[] { commonName,	orgU, org, local, state, country}; 
   }
 
   public int executeCommand()
   throws IOException, InterruptedException
   {
     int exitValue = -99;
-
+    
     try
     {
       ProcessBuilder pb = new ProcessBuilder(commandInformation);
+      Map<String, String> env = pb.environment();
+        env.put("PATH", "C:\\Users\\Alex\\Desktop\\keytool.exe - Shortcut.lnk");
+//      env.remove("OTHERVAR");
+//      env.put("VAR2", env.get("VAR1") + "suffix");
+      File dir = new File("C:\\Users\\Alex\\Desktop");
+	  pb.directory(dir);
       Process process = pb.start();
 
       // you need this if you're going to write something to the command's input stream
@@ -87,8 +125,10 @@ public class SystemCommandExecutor
       // these need to run as java threads to get the standard output and error from the command.
       // the inputstream handler gets a reference to our stdOutput in case we need to write
       // something to it, such as with the sudo command
-      inputStreamHandler = new ThreadedStreamHandler(inputStream, stdOutput, adminPassword);
-      errorStreamHandler = new ThreadedStreamHandler(errorStream);
+      
+     // inputStreamHandler = new ThreadedStreamHandler(inputStream, stdOutput, null);
+      inputStreamHandler = new KeytoolStreamHandler(errorStream, stdOutput, inputVars);
+      errorStreamHandler = new ThreadedStreamHandler(inputStream);
 
       // TODO the inputStreamHandler has a nasty side-effect of hanging if the given password is wrong; fix it
       inputStreamHandler.start();

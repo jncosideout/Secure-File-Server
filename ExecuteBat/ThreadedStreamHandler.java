@@ -38,11 +38,11 @@ import java.io.*;
  */
 class ThreadedStreamHandler extends Thread
 {
-  InputStream inputStream;
-  String adminPassword;
-  OutputStream outputStream;
-  PrintWriter printWriter;
-  StringBuilder outputBuffer = new StringBuilder();
+  public InputStream inputStream;
+  public String adminPassword;
+  public OutputStream outputStream;
+  public PrintWriter printWriter;
+  public StringBuilder outputBuffer = new StringBuilder();
   private boolean sudoIsRequested = false;
   
   /**
@@ -75,7 +75,7 @@ class ThreadedStreamHandler extends Thread
     this.outputStream = outputStream;
     this.printWriter = new PrintWriter(outputStream);
     this.adminPassword = adminPassword;
-    this.sudoIsRequested = true;
+    this.sudoIsRequested = false;
   }
   
   public void run()
@@ -123,7 +123,7 @@ class ThreadedStreamHandler extends Thread
     }
   }
   
-  private void doSleep(long millis)
+  public void doSleep(long millis)
   {
     try
     {
