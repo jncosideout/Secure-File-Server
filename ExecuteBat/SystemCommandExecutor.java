@@ -37,7 +37,7 @@ import java.util.Map;
 public class SystemCommandExecutor
 {
   private List<String> commandInformation;
-  private KeytoolStreamHandler inputStreamHandler;
+  private ThreadedStreamHandler inputStreamHandler;
   private ThreadedStreamHandler errorStreamHandler;
   
   private String[] inputVars = null;
@@ -48,6 +48,7 @@ public class SystemCommandExecutor
   private String local = null;
   private String state = null;
   private String country = null;
+  private boolean runGenKey = false;
   
   /**
    * Pass in the system command you want to run as a List of Strings, as shown here:
@@ -72,7 +73,14 @@ public class SystemCommandExecutor
     if (commandInformation==null) throw new NullPointerException("The commandInformation is required.");
     this.commandInformation = commandInformation;
     
-  //setup for eventual questions
+    for (String com : commandInformation) {
+    	if (com.contains("genkey")) 
+    		{ runGenKey = true; break; }
+    }
+    
+    if (runGenKey) {
+  //setup for eventual -genkey questions
+    	
 //  System.out.println("Enter common name"));
 //	String commonName = userInput.nextLine();
 //	System.out.println("Enter name of your organizational unit"));
@@ -86,7 +94,7 @@ public class SystemCommandExecutor
 //	System.out.println("Enter two-letter country code"));
 //	String country = userInput.nextLine();
   
-    commonName = "testName";
+    commonName = "testName3";
 	orgU = "testOrgU";
 	org = "testOrg";
 	local = "testLocality";
@@ -94,6 +102,7 @@ public class SystemCommandExecutor
 	country = "TC";
 	
     inputVars = new String[] { commonName,	orgU, org, local, state, country}; 
+    }
   }
 
   public int executeCommand()
@@ -105,10 +114,16 @@ public class SystemCommandExecutor
     {
       ProcessBuilder pb = new ProcessBuilder(commandInformation);
       Map<String, String> env = pb.environment();
-        env.put("PATH", "C:\\Users\\Alex\\Desktop\\keytool.exe - Shortcut.lnk");
+      if (runGenKey) { //shortcut for elevated privileges keytool
+          env.put("PATH", "C:\\Users\\Alex\\Desktop\\keytool.exe - Shortcut.lnk"); 
+      } else {
+        env.put("PATH", "C:\\Program Files\\Java\\jre1.8.0_144\\bin\\keytool.exe"); }
 //      env.remove("OTHERVAR");
 //      env.put("VAR2", env.get("VAR1") + "suffix");
-      File dir = new File("C:\\Users\\Alex\\Desktop");
+      File dir = null;
+      if (runGenKey) {
+    	  dir = new File("C:\\Users\\Alex\\Desktop");
+      } else {  dir = new File("C:\\Program Files\\Java\\jre1.8.0_144\\bin"); }
 	  pb.directory(dir);
       Process process = pb.start();
 
@@ -126,9 +141,12 @@ public class SystemCommandExecutor
       // the inputstream handler gets a reference to our stdOutput in case we need to write
       // something to it, such as with the sudo command
       
-     // inputStreamHandler = new ThreadedStreamHandler(inputStream, stdOutput, null);
-      inputStreamHandler = new KeytoolStreamHandler(errorStream, stdOutput, inputVars);
-      errorStreamHandler = new ThreadedStreamHandler(inputStream);
+      if (runGenKey) {
+	      inputStreamHandler = new KeytoolStreamHandler(errorStream, stdOutput, inputVars);
+	      errorStreamHandler = new ThreadedStreamHandler(inputStream); //switch inputStream with errorStream to make keytool work 
+      } else {
+	      inputStreamHandler = new ThreadedStreamHandler(inputStream);
+	      errorStreamHandler = new ThreadedStreamHandler(errorStream); } //switch inputStream with errorStream to make keytool work 
 
       // TODO the inputStreamHandler has a nasty side-effect of hanging if the given password is wrong; fix it
       inputStreamHandler.start();
