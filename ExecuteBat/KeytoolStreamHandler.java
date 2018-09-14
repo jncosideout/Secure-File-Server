@@ -13,7 +13,7 @@ public class KeytoolStreamHandler extends ThreadedStreamHandler {
 	String[] inputVars = null;
 	
 	KeytoolStreamHandler(InputStream inputStream, OutputStream outputStream, String[] inputVars) {
-		super(inputStream, outputStream, null);
+		super(inputStream, outputStream);
 		// TODO Auto-generated constructor stub
 		this.inputVars = inputVars;
 		
@@ -80,15 +80,9 @@ public class KeytoolStreamHandler extends ThreadedStreamHandler {
 	  }
 	
 	private void sendToProcess(String input) throws IOException {
-		//if ((line = bufferedReader.readLine()).equals("[Unknown]:")) {
     		doSleep(500);
 		      printWriter.println(input);
-		      printWriter.flush();
-//    	} else if (line.equals("[no]:")) {
-//    		doSleep(500);
-//		      printWriter.println(input);
-//		      printWriter.flush();
-//    	}
+		      printWriter.flush();  
 	}
 
 }//endclass

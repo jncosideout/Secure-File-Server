@@ -30,7 +30,7 @@ import java.util.Map;
  * You should have received a copy of the GNU Lesser Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
- * Please ee the following page for the LGPL license:
+ * Please see the following page for the LGPL license:
  * http://www.gnu.org/licenses/lgpl.txt
  * 
  */
@@ -49,6 +49,7 @@ public class SystemCommandExecutor
   private String state = null;
   private String country = null;
   private boolean runGenKey = false;
+  private boolean runCertReq = false;
   
   /**
    * Pass in the system command you want to run as a List of Strings, as shown here:
@@ -74,10 +75,13 @@ public class SystemCommandExecutor
     this.commandInformation = commandInformation;
     
     for (String com : commandInformation) {
-    	if (com.contains("genkey")) 
-    		{ runGenKey = true; break; }
+    	if (com.contains("genkey")) {
+    		runGenKey = true; break; 
+    	} else if (com.contains("certreq")) {
+    		runCertReq = true; break;
+    	}
     }
-    
+   // runCertReq = false; //TESTING PURPOSES
     if (runGenKey) {
   //setup for eventual -genkey questions
     	
@@ -114,14 +118,14 @@ public class SystemCommandExecutor
     {
       ProcessBuilder pb = new ProcessBuilder(commandInformation);
       Map<String, String> env = pb.environment();
-      if (runGenKey) { //shortcut for elevated privileges keytool
+      if (runGenKey || runCertReq) { //shortcut for elevated privileges keytool
           env.put("PATH", "C:\\Users\\Alex\\Desktop\\keytool.exe - Shortcut.lnk"); 
       } else {
         env.put("PATH", "C:\\Program Files\\Java\\jre1.8.0_144\\bin\\keytool.exe"); }
 //      env.remove("OTHERVAR");
 //      env.put("VAR2", env.get("VAR1") + "suffix");
       File dir = null;
-      if (runGenKey) {
+      if (runGenKey || runCertReq) {
     	  dir = new File("C:\\Users\\Alex\\Desktop");
       } else {  dir = new File("C:\\Program Files\\Java\\jre1.8.0_144\\bin"); }
 	  pb.directory(dir);
@@ -143,10 +147,10 @@ public class SystemCommandExecutor
       
       if (runGenKey) {
 	      inputStreamHandler = new KeytoolStreamHandler(errorStream, stdOutput, inputVars);
-	      errorStreamHandler = new ThreadedStreamHandler(inputStream); //switch inputStream with errorStream to make keytool work 
+	      errorStreamHandler = new ThreadedStreamHandler(inputStream); //switch inputStream with errorStream to make keytool -genkey work 
       } else {
 	      inputStreamHandler = new ThreadedStreamHandler(inputStream);
-	      errorStreamHandler = new ThreadedStreamHandler(errorStream); } //switch inputStream with errorStream to make keytool work 
+	      errorStreamHandler = new ThreadedStreamHandler(errorStream); } //switch inputStream with errorStream to make keytool -genkey work 
 
       // TODO the inputStreamHandler has a nasty side-effect of hanging if the given password is wrong; fix it
       inputStreamHandler.start();
