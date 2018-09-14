@@ -39,11 +39,9 @@ import java.io.*;
 class ThreadedStreamHandler extends Thread
 {
   public InputStream inputStream;
-  public String adminPassword;
   public OutputStream outputStream;
   public PrintWriter printWriter;
   public StringBuilder outputBuffer = new StringBuilder();
-  private boolean sudoIsRequested = false;
   
   /**
    * A simple constructor for when the sudo command is not necessary.
@@ -69,26 +67,16 @@ class ThreadedStreamHandler extends Thread
    * @param outputStream
    * @param adminPassword
    */
-  ThreadedStreamHandler(InputStream inputStream, OutputStream outputStream, String adminPassword)
+  ThreadedStreamHandler(InputStream inputStream, OutputStream outputStream)
   {
     this.inputStream = inputStream;
     this.outputStream = outputStream;
     this.printWriter = new PrintWriter(outputStream);
-    this.adminPassword = adminPassword;
-    this.sudoIsRequested = false;
   }
   
   public void run()
   {
-    // on mac os x 10.5.x, when i run a 'sudo' command, i need to write
-    // the admin password out immediately; that's why this code is
-    // here.
-    if (sudoIsRequested)
-    {
-      //doSleep(500);
-      printWriter.println(adminPassword);
-      printWriter.flush();
-    }
+   
 
     BufferedReader bufferedReader = null;
     try
