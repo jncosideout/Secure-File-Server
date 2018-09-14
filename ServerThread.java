@@ -31,15 +31,13 @@ public class ServerThread implements Runnable {
 		
 		public void run(){
 			
-			socket.setEnabledCipherSuites(socket.getSupportedCipherSuites());
-
+			//socket.setEnabledCipherSuites(socket.getSupportedCipherSuites());
+			System.out.println("Welcome " + userName);
+			System.out.println("Local port: " + socket.getLocalPort());
+			System.out.println("Server = " + socket.getRemoteSocketAddress() + ":" + socket.getPort());
+			
 			try {
-				System.out.println("Welcome " + userName);
-				
-				System.out.println("Local port: " + socket.getLocalPort());
-				System.out.println("Server = " + socket.getRemoteSocketAddress() + ":" + socket.getPort());
-				
-				//start handshake
+				// handshake
 				socket.startHandshake();
 				
 				//get session after connection is established
@@ -49,35 +47,14 @@ public class ServerThread implements Runnable {
 				System.out.println("\tProtocol: " + session.getProtocol());
 				System.out.println("\tCipher suite: " + session.getCipherSuite());
 				
-				//setup i/o
-				PrintWriter serverOut = new PrintWriter(socket.getOutputStream(), false);
+				//this thread is now INPUT only
 				InputStream serverInStream = socket.getInputStream();
 				Scanner serverIn = new Scanner(serverInStream);
 				
 				while(!socket.isClosed()) {
-					if (serverInStream.available() > 0) {
 						if (serverIn.hasNextLine()) {
 							System.out.println(serverIn.nextLine());
 						}
-					}
-					if (hasMessages) {
-						String nextSend = "";
-						synchronized (messagesToSend) {
-							nextSend = messagesToSend.pop();
-							hasMessages = !messagesToSend.isEmpty();
-						}
-					serverOut.println(userName + " > " + nextSend);
-					serverOut.flush();
-					
-						/*make sure 
-						 * there were 
-						 * no surprises
-						 */
-						if  (serverOut.checkError()) {
-							System.err.println("ServerThread: java.io.PrintWriter error");
-						}
-						
-					}
 				}//end while
 				
 				serverIn.close();

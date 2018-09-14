@@ -16,6 +16,7 @@ import javax.net.ssl.*;
 import java.io.Console;				//used for system.console.readPassword() which isn't working
 import java.io.ObjectInputStream;   // Used to read objects sent from the server
 import java.io.ObjectOutputStream;  // Used to write objects to the server
+import java.io.PrintWriter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.BufferedInputStream;
@@ -33,21 +34,18 @@ import java.util.Scanner;
  */
 public class EchoClient
 {
-
-    /**
-     * Main method.
-     *
-     * @param args  First argument specifies the server to connect to
-     *
-     */
-	
 	public static final String host = "localhost";
 	
 	private String userName;
 	private String serverHost;
 	private int serverPort;
 	
-	
+	/**
+     * Main method.
+     *
+     * @param args  First argument specifies the server to connect to
+     *
+     */
     public static void main(String[] args)
     {
     	String readName = null;
@@ -87,7 +85,7 @@ public class EchoClient
     	
     	String ksName; //file path of keystore
 		//System.out.println("What is the keystore file path?");
-		ksName = "C:\\temp-openssl-32build\\clientKeystore\\clientkeystore.jks"; 			
+		ksName = "INSERT_FILE_PATH"; 			
 				//scan.nextLine();
 
 		//System.out.println("Input keystore password");
@@ -96,7 +94,7 @@ public class EchoClient
     	
     	String tsName; //file path of trust store
 		//System.out.println("What is the trust store file path?");
-		tsName = "C:\\temp-openssl-32build\\clientKeystore\\clientTrustStore.jks"; 			
+		tsName = "INSERT_FILE_PATH"; 			
 				//scan.nextLine();
 
 		//System.out.println("Input keystore password");
@@ -172,6 +170,8 @@ public class EchoClient
 	    	    Thread serverAccessThread = new Thread(serverThread);
 	    	    serverAccessThread.start();
 	    	    
+	            PrintWriter serverOut = new PrintWriter(sock.getOutputStream(), false);
+
 	    	    while (serverAccessThread.isAlive())
 	    	    {
 	    	    	if (scan.hasNextLine() ) {
@@ -180,11 +180,24 @@ public class EchoClient
 	    		    	    System.out.println("Leaving chat");
 	    	    			break;
 	    	    		}
-	    	    		serverThread.addNextMessage(scan.nextLine());
-	    	    	}
-	    	    }
+	    	    		else {
+							String nextSend = scan.nextLine();
+							serverOut.println(userName + " > " + nextSend);
+							serverOut.flush();
+						
+							/*make sure 
+							 * there were 
+							 * no surprises
+							 */
+							if  (serverOut.checkError()) {
+								System.err.println("ServerThread: java.io.PrintWriter error");
+							}
+						}
+	    	    	}//end if
+	    	    }//end while
 	    	    
 	    	    serverAccessThread.join();
+	    	    System.err.println("after serverThread.join(); in EchoClient");
 	    	    
 		    } catch(IOException io) {
 				System.out.println("Error: " + io.getMessage());
@@ -222,10 +235,6 @@ public class EchoClient
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-   	 
-    	
-    	
-    	
     }
     
     /**
