@@ -85,7 +85,7 @@ public class EchoClient
     	
     	String ksName; //file path of keystore
 		//System.out.println("What is the keystore file path?");
-		ksName = "INSERT_FILE_PATH"; 			
+		ksName = "C:\\temp-openssl-32build\\clientKeystore\\clientkeystore.jks"; 			
 				//scan.nextLine();
 
 		//System.out.println("Input keystore password");
@@ -94,7 +94,7 @@ public class EchoClient
     	
     	String tsName; //file path of trust store
 		//System.out.println("What is the trust store file path?");
-		tsName = "INSERT_FILE_PATH"; 			
+		tsName = "C:\\temp-openssl-32build\\clientKeystore\\clientTrustStore.jks"; 			
 				//scan.nextLine();
 
 		//System.out.println("Input keystore password");
@@ -109,9 +109,27 @@ public class EchoClient
 		String keypass = "client1";
     	char[] kpass = keypass.toCharArray();  // password for private key
     	
+    	SSLContext sc = initSSLContext(ksName, spass, tsName, tspass, kpass);
+    	SSLSocketFactory factory = sc.getSocketFactory();
+    	SSLSocket sock = connect(factory);
+    	try {
+			startChat(sock, scan);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+    
+    public SSLContext initSSLContext(String ksName, char[] spass, String tsName,
+    		char[] tspass, char[] kpass) {
     	
-    	 try {
-			SSLContext sc = SSLContext.getInstance("TLSv1.2");
+    	SSLContext sc =  null;
+    	
+    	try {
+			sc = SSLContext.getInstance("TLSv1.2");
 			
 			//initialize KeyStore
 			KeyStore ks = KeyStore.getInstance("JKS");
@@ -138,78 +156,6 @@ public class EchoClient
 			SecureRandom random = SecureRandom.getInstanceStrong();
 			sc.init(kmf.getKeyManagers(), tmf.getTrustManagers(), random);
 			
-//			SSLParameters params = sc.getSupportedSSLParameters();
-//			String[] ciphers = params.getCipherSuites();
-//			String[] protocols = params.getProtocols();
-//			System.out.println("supported cipher suites are: \n");
-//			for (String c : ciphers) {
-//				System.out.println(c + "\n");
-//			}
-//			System.out.println("Supported protocols are: \n");
-//			for (String p : protocols) {
-//				System.out.println(p +"\n");
-//			}
-			
-//			System.out.println(x);
-//			System.out.println("client session : " + sc.getClientSessionContext());
-			
-			
-			SSLSocketFactory factory = sc.getSocketFactory();
-			
-			try{
-	    	    // Connect to the specified server
-	    		
-	    	    SSLSocket sock = (SSLSocket) factory.createSocket(serverHost, serverPort);
-//    			String[] suites = {"TLS_RSA_WITH_AES_128_CBC_SHA256"};
-//    			sock.setEnabledCipherSuites(suites);
-    			
-	    	    Thread.sleep(1000);
-	    	    System.out.println("Connected to " + host + " on port " + EchoServer.SERVER_PORT);
-	    	    
-	    	    ServerThread serverThread = new ServerThread(sock, userName);
-	    	    Thread serverAccessThread = new Thread(serverThread);
-	    	    serverAccessThread.start();
-	    	    
-	            PrintWriter serverOut = new PrintWriter(sock.getOutputStream(), false);
-
-	    	    while (serverAccessThread.isAlive())
-	    	    {
-	    	    	if (scan.hasNextLine() ) {
-	    	    		if (scan.hasNext("goodbye")) {
-	    	    			sock.close();
-	    		    	    System.out.println("Leaving chat");
-	    	    			break;
-	    	    		}
-	    	    		else {
-							String nextSend = scan.nextLine();
-							serverOut.println(userName + " > " + nextSend);
-							serverOut.flush();
-						
-							/*make sure 
-							 * there were 
-							 * no surprises
-							 */
-							if  (serverOut.checkError()) {
-								System.err.println("ServerThread: java.io.PrintWriter error");
-							}
-						}
-	    	    	}//end if
-	    	    }//end while
-	    	    
-	    	    serverAccessThread.join();
-	    	    System.err.println("after serverThread.join(); in EchoClient");
-	    	    
-		    } catch(IOException io) {
-				System.out.println("Error: " + io.getMessage());
-				io.printStackTrace();
-			} catch (InterruptedException intE) {
-				System.err.println("Error: " + intE.getMessage());
-				intE.printStackTrace();
-			} catch(Exception e) {
-				System.err.println("Error: " + e.getMessage());
-			    e.printStackTrace(System.err);
-			}   
-			
 			
     	} catch (NoSuchAlgorithmException e1) {
 			// TODO Auto-generated catch block
@@ -235,25 +181,80 @@ public class EchoClient
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		return sc;
     }
     
-    /**
-     * Simple method to print a prompt and read a line of text.
-     *
-     * @return A line of text read from the console
-     */
-    /*public static boolean connect()
-    {
-    	String choice = null;
-    	System.out.println("Would you like to connect to the server? Type Y/N");
-    	readSomeText(choice);
-    	if(choice.toUpperCase().equals("Y") )
-    	return true;
-    	else
-		return false;
-    }*/
-   
-   
- 
+    public SSLSocket connect(SSLSocketFactory factory) {
+    	SSLSocket sock = null;
+    	try{
+    	    // Connect to the specified server
+    		
+    	    sock = (SSLSocket) factory.createSocket(serverHost, serverPort);
+//			String[] suites = {"TLS_RSA_WITH_AES_128_CBC_SHA256"};
+//			sock.setEnabledCipherSuites(suites);
+			
+    	    Thread.sleep(1000);
+    	    System.out.println("Connected to " + host + " on port " + EchoServer.SERVER_PORT);
+    	    
+	    } catch(Exception e) {
+			System.err.println("Error: " + e.getMessage());
+		    e.printStackTrace(System.err);
+		}
+		return sock;  
+    }
     
+    public void startChat(SSLSocket sock, Scanner scan) throws IOException, InterruptedException {
+
+	    ServerThread serverThread = new ServerThread(sock, userName);
+	    Thread serverAccessThread = new Thread(serverThread);
+	    serverAccessThread.start();
+	    
+        PrintWriter serverOut = new PrintWriter(sock.getOutputStream(), false);
+
+	    while (serverAccessThread.isAlive())
+	    {
+	    	if (scan.hasNextLine() ) {
+	    		if (scan.hasNext("goodbye")) {
+	    			sock.close();
+		    	    System.out.println("Leaving chat");
+	    			break;
+	    		}
+	    		else {
+					String nextSend = scan.nextLine();
+					serverOut.println(userName + " > " + nextSend);
+					serverOut.flush();
+				
+					/*make sure 
+					 * there were 
+					 * no surprises
+					 */
+					if  (serverOut.checkError()) {
+						System.err.println("ServerThread: java.io.PrintWriter error");
+					}
+				}
+	    	}//end if
+	    }//end while
+	    
+	    serverAccessThread.join();
+	    System.err.println("after serverThread.join(); in EchoClient");
+	    
+    }
+
+    public void printParams(SSLContext sc) {
+		SSLParameters params = sc.getSupportedSSLParameters();
+		String[] ciphers = params.getCipherSuites();
+		String[] protocols = params.getProtocols();
+		System.out.println("supported cipher suites are: \n");
+		for (String c : ciphers) {
+			System.out.println(c + "\n");
+		}
+		System.out.println("Supported protocols are: \n");
+		for (String p : protocols) {
+			System.out.println(p +"\n");
+		}
+		
+		System.out.println("client session : " + sc.getClientSessionContext());
+	
+    }
+   
 } //-- end class EchoClient
