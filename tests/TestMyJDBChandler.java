@@ -30,11 +30,10 @@ public class TestMyJDBChandler {
 			System.err.println("connection not made");
 		}
 		
-//		String results = handler.searchTable(myConnection, table, "romeo16", "romeo@uh.edu", true, true);
-//		System.out.println(results);
-//		
-//		String[] parts2 = results.split(":");
-//		String algo = parts2[4];
+		String[] results = handler.searchTable(myConnection, table, "'nrispine7'", "romeo@uh.edu", true, true);
+		System.out.println(results);
+		
+		
 		
 //		String newSaltAndHash = new TestSaltHashPass().testHash();
 //		
@@ -42,11 +41,11 @@ public class TestMyJDBChandler {
 //		int iterations = Integer.parseInt(parts[0]);
 //		String salt = parts[1];
 //		String hash = parts[2];
-		
-		
-		//handler.updateRow(myConnection, table, "nrispine7", 8, salt, hash);
-		//handler.insertRow(myConnection, table, "romeo16", "romeo@uh.edu", salt, hash, iterations, algo);
-	//	handler.deleteRow(myConnection, table, "romeo16", 102);
+//		
+//		
+//		handler.updateRow(myConnection, table, "nrispine7", 8, salt, hash);
+//		handler.insertRow(myConnection, table, "romeo16", "romeo@uh.edu", salt, hash, iterations, algo);
+//		handler.deleteRow(myConnection, table, "romeo16", 102);
 		
 		} catch (SQLException s) {
 			handler.printSQLException(s);

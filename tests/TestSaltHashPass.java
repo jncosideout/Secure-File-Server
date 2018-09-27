@@ -7,12 +7,12 @@ import login.SaltHashPassW;
 
 public class TestSaltHashPass {
 
-	public String testHash() {
+	public String[] testHash() {
 		// TODO Auto-generated method stub
 		String userPass = "hellokitty";
 		
 		SaltHashPassW shpw = new SaltHashPassW(userPass, 40000);
-		String generatedSaltHashedPass = null;
+		String[] generatedSaltHashedPass = null;
 		try {
 			generatedSaltHashedPass = shpw.generatePasswordHash(64, "PBKDF2WithHmacSHA256");
 			

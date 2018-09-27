@@ -19,17 +19,26 @@ public class SaltHashPassW {
 		this.originalPassword = originalPassword;
 	}
 	
-	//keyLength set to 64 when generating pw for first time storage
-	public String generatePasswordHash(int keyLength, String hash_algorithm) throws NoSuchAlgorithmException, InvalidKeySpecException {
+	/* Returns a String array containing
+	 * [0] = number of iterations as a String
+	 * [1] = a hex String of the salt 
+	 * [2] = a hex String of the hash 
+	 * */
+	public String[] generatePasswordHash(int keyLength, String hash_algorithm) throws NoSuchAlgorithmException, InvalidKeySpecException {
 		
 		char[] pass = originalPassword.toCharArray();
 		byte[] salt = getSalt();
 		
+		//keyLength set to 64 when generating pw for first time storage
 		PBEKeySpec spec = new PBEKeySpec(pass, salt, iterations, keyLength * 8);
 		SecretKeyFactory skf = 	SecretKeyFactory.getInstance(hash_algorithm);
 		byte[] hash = skf.generateSecret(spec).getEncoded();
 				
-		return iterations + ":" + toHex(salt) + ":" + toHex(hash);
+		String[] iterations_salt_hash = new String[3];
+		iterations_salt_hash[0] = Integer.toString(iterations);
+		iterations_salt_hash[1] = toHex(salt);
+		iterations_salt_hash[2] = toHex(hash);
+		return  iterations_salt_hash;
 	}
 	
 	public byte[] getSalt() throws NoSuchAlgorithmException {

@@ -13,6 +13,8 @@ import java.security.SecureRandom;
 
 import javax.net.ssl.*;
 
+import login.UserLogin;
+
 import java.io.Console;				//used for system.console.readPassword() which isn't working
 import java.io.ObjectInputStream;   // Used to read objects sent from the server
 import java.io.ObjectOutputStream;  // Used to write objects to the server
@@ -24,6 +26,7 @@ import java.io.BufferedReader;      // Needed to read from the console
 import java.io.InputStreamReader;   // Needed to read from the console
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Scanner;
 /**
  * Simple client class.  This class connects to an EchoServer to send
@@ -39,6 +42,10 @@ public class EchoClient
 	private String userName;
 	private String serverHost;
 	private int serverPort;
+	private String ksName; //file path of keystore
+    private String	storePass;
+    private String tsName; //file path of trust store
+    private String	trustStorePass;
 	
 	/**
      * Main method.
@@ -46,59 +53,55 @@ public class EchoClient
      * @param args  First argument specifies the server to connect to
      *
      */
-    public static void main(String[] args)
-    {
-    	String readName = null;
-	 
-	 Scanner userInputScanner = new Scanner(System.in);
-	 System.out.println("What's your username?");
-	 while (readName == null || readName.trim().equals("")) {
-			try{
-			    
-			    readName = userInputScanner.nextLine();
-			    if (readName.trim().equals(""))
-			    	System.out.println("Usernames must not be blank. Please try again");
-				}
-			catch(Exception e){
-			    System.out.println( "error reading from keyboard");
-			    e.printStackTrace(System.err);
-				}
- 	}
-	 
-	 EchoClient client = new EchoClient(readName, host, EchoServer.SERVER_PORT);
+    public static void main(String[] args) {
+     Scanner userInputScanner = new Scanner(System.in);
+	 	 
+	 EchoClient client = new EchoClient(host, EchoServer.SERVER_PORT);
 	 client.startClient(userInputScanner);
 
 	 userInputScanner.close();
-	 
-
     }//-- end main(String[])
 
 
-    private EchoClient(String userName, String host, int portNumber)
-    {
-    this.userName = userName;
+    private EchoClient(String host, int portNumber) {
     serverPort = portNumber;
     serverHost = host;
     }
     
     private void startClient(Scanner scan) {
+    	ArrayList<char[]> jksPassWs = assignKeystorePaths();
+    	SSLContext sc = initSSLContext(jksPassWs);
+    	SSLSocketFactory factory = sc.getSocketFactory();
+    	SSLSocket sock = connect(factory);
     	
-    	String ksName; //file path of keystore
+    	try {
+    		UserLogin ul = new UserLogin(sock);
+			startChat(sock, scan);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+    }
+    
+    private ArrayList<char[]> assignKeystorePaths() {
+    	
 		//System.out.println("What is the keystore file path?");
 		ksName = "C:\\temp-openssl-32build\\clientKeystore\\clientkeystore.jks"; 			
 				//scan.nextLine();
 
 		//System.out.println("Input keystore password");
-		String	storePass = "keYs4clianTs";
+		storePass = "keYs4clianTs";
     	char[] spass = storePass.toCharArray();  				// password for keystore
     	
-    	String tsName; //file path of trust store
 		//System.out.println("What is the trust store file path?");
 		tsName = "C:\\temp-openssl-32build\\clientKeystore\\clientTrustStore.jks"; 			
 				//scan.nextLine();
 
 		//System.out.println("Input keystore password");
-		String	trustStorePass = "clianTtrUst";
+		trustStorePass = "clianTtrUst";
     	char[] tspass = trustStorePass.toCharArray();  				// password for TrustStore
      				
     	
@@ -108,23 +111,15 @@ public class EchoClient
 		//System.out.println("Input key password for %s", alias);
 		String keypass = "client1";
     	char[] kpass = keypass.toCharArray();  // password for private key
-    	
-    	SSLContext sc = initSSLContext(ksName, spass, tsName, tspass, kpass);
-    	SSLSocketFactory factory = sc.getSocketFactory();
-    	SSLSocket sock = connect(factory);
-    	try {
-			startChat(sock, scan);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-    }
+     	ArrayList<char[]> passwords = new ArrayList<>();
+     	passwords.add(spass);
+     	passwords.add(tspass);
+     	passwords.add(kpass);
+     	
+ 		return passwords;  
+     }
     
-    public SSLContext initSSLContext(String ksName, char[] spass, String tsName,
-    		char[] tspass, char[] kpass) {
+    public SSLContext initSSLContext(ArrayList<char[]> jksPassWs) {
     	
     	SSLContext sc =  null;
     	
@@ -136,20 +131,18 @@ public class EchoClient
 			FileInputStream ksfis = new FileInputStream(ksName);
 			BufferedInputStream ksbufin = new BufferedInputStream(ksfis);
 			
-			ks.load(ksbufin, spass);
+			ks.load(ksbufin, jksPassWs.get(0));
 			ksfis.close();
-			
 			//initialize TrustStore
 			KeyStore ts = KeyStore.getInstance("JKS");
 			FileInputStream tsfis = new FileInputStream(tsName);
 			BufferedInputStream tsbufin = new BufferedInputStream(tsfis);
-			
-			ts.load(tsbufin, tspass);
+			ts.load(tsbufin, jksPassWs.get(1));
 			tsfis.close();
 
 			//init factories
 			KeyManagerFactory kmf = KeyManagerFactory.getInstance("Sunx509");
-			kmf.init(ks, kpass);
+			kmf.init(ks, jksPassWs.get(2));
 			TrustManagerFactory tmf = TrustManagerFactory.getInstance("PKIX");
 			tmf.init(ts);
 			

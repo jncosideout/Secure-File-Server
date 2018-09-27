@@ -40,21 +40,15 @@ import javax.net.ssl.SSLSocket;
 public class EchoThread extends Thread
 {
 
-	private BufferedWriter clientOut;
+	private PrintWriter clientOut;
 	private EchoServer server;
 	private SSLSocket socket; // The socket that we'll be talking over
 	
 	public String mPassword; // to store the user's input for password verification
 	public String mUsername;// to store the user's input for password verification
 	public String UserENCRYPTkey; // to compare the user's input for encryption key verification
-	public Integer Selection=0; //user input for menu selection
-	public String path1, path2, path3,path4; //to store the file pathnames for each file belonging to a user
 	final static Charset ENCODING = StandardCharsets.UTF_8;
-	public ArrayList<String> encrypt=new ArrayList<String>(); //array to temporarily store encrypted or decrypted output
-
-	public ArrayList<String> mList=new ArrayList<String>(); // array to  store user's files while application is running only.
-	public ArrayList<String> mList2=new ArrayList<String>(); // array to  store user's files while application is running only.
-
+	
     /**
      * Constructor that sets up the socket we'll chat over
      *
@@ -69,63 +63,32 @@ public class EchoThread extends Thread
     
 
 
-    private BufferedWriter getClientOut() {
+    private PrintWriter getClientOut() {
 		return clientOut;
 	}
-
-
-
-	public void mfiles()
-    {
-    	if(mUsername.equals("aj"))
-		{
-			path1 = "C:\\Users\\Alex\\Documents\\java projects\\client file server\\ajlist1.txt";
-			path2 = "C:\\Users\\Alex\\Documents\\java projects\\client file server\\ajlist2.txt";
-			
-		}
-		if(mUsername.equals("jackie"))
-		{
-			path3 = "C:\\Users\\Alex\\Documents\\java projects\\client file server\\jackielist1.txt";
-	    	path4 = "C:\\Users\\Alex\\Documents\\java projects\\client file server\\jackielist2.txt";
-		}
-    	
-    }
     
-    /**
-     * run() is basically the main method of a thread.  This thread
-     * simply reads Message objects off of the socket.
-     *
-     */
+   
     public void run()
     {
-		socket.setEnabledCipherSuites(socket.getSupportedCipherSuites());
+		//socket.setEnabledCipherSuites(socket.getSupportedCipherSuites());
 
 	try{
 		//start handshake
 		socket.startHandshake();
-		/*
-		//get session after connection is established
-		SSLSession session = socket.getSession();
 		
-		System.out.println("Session details: ");
-		System.out.println("\tProtocol: " + session.getProtocol());
-		System.out.println("\tCipher suite: " + session.getCipherSuite());
-		*/
 	  //setup i/o
-		this.clientOut = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+		this.clientOut = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
 		Scanner in = new Scanner(socket.getInputStream());
 		
 		while(!socket.isClosed()) {
 			 
-			//if (socket.getInputStream().available() <= 0) {
-
 			if (in.hasNextLine()) {
 				String input = in.nextLine();
                 // NOTE: if you want to check server can read input, 
 				//uncomment next line and check server file console.
-				System.out.println(input); 
+				//System.out.println(input); 
 				for (EchoThread thatClient : server.getClients()) {
-					BufferedWriter thatClientOut = thatClient.getClientOut();
+					PrintWriter thatClientOut = thatClient.getClientOut();
 					
 					if (thatClientOut != null) {
 						
@@ -134,9 +97,9 @@ public class EchoThread extends Thread
 							thatClientOut.flush();
 							/*make sure  there were 
 							 * no surprises */
-							//						if  (thatClientOut()) {
-							//							System.err.println("EchoThread: java.io.BufferedWriter error");
-							//						}
+							if  (thatClientOut.checkError()) {
+								System.err.println("EchoThread: PrintWriter error");
+							}
 						} catch (Exception e) {
 							// TODO: handle exception
 							e.printStackTrace();
@@ -160,13 +123,13 @@ public class EchoThread extends Thread
 			} //end if/else
 		}//end while
 		
-		try {
-			server.removeClient(this);
-			join();
-			System.out.println("after join");
-		} catch (InterruptedException ie) {
-			ie.printStackTrace();
-		}
+			try {
+				server.removeClient(this);
+				join();
+				System.out.println("after join");
+			} catch (InterruptedException ie) {
+				ie.printStackTrace();
+			}
 		
 		} catch (IOException io) {
 		    System.err.println("Error: " + io.getMessage());
@@ -177,36 +140,7 @@ public class EchoThread extends Thread
 		} 
 
     }  //-- end run()
-   
     
-  
-    public boolean validate()
-    {
-    	
-    		for(int i=0;i<EchoServer.usernames.length;i++)
-    		{
-    			if(EchoServer.usernames[0][i].equals(mUsername)&& EchoServer.usernames[1][i].equals(mPassword))
-    			{
-    				return true;
-    			
-    			}
-    		}
-    	
-    	
-    	return false;
-    }
-    public void Clear()
-    {
-    	if(mUsername.equals("aj"))
-		{
-			mList.clear();
-		}
-		else
-		{
-			mList2.clear();
-		}
-    	
-    }
       
     void overwrite(String path, String userfile)// overwrite text files
     {

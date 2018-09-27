@@ -96,8 +96,9 @@ public class MyJDBChandler {
 		      ex = ex.getNextException();
 		    }
 		  }
-	  
-	  public String searchTable(Connection con, String tableName, String userName, String email, 
+	
+	  //output[0] = id; [1] = salt; [2] = hash; [3] = iterations; [4] = hash_algo;
+	  public String[] searchTable(Connection con, String tableName, String userName, String email, 
 			  boolean wantSaltHash, boolean wantIterAlgo) throws SQLException {
 		 Statement stmt = null;
 		 String query = null;
@@ -146,13 +147,15 @@ public class MyJDBChandler {
 			 if (stmt != null) {  stmt.close(); }
 		 }
 		 
-		 String output = "";
-		 if (wantSaltHash && wantIterAlgo) {
-			 output += id + ":" +iterations + ":" + salt + ":" + hash + ":" + hash_algo;
-		 }else if (wantSaltHash) {
-			 output += id + ":" + salt + ":" + hash;
+		 String[] output = new String[5];
+		 output[0] = id;
+		 
+		 if (wantSaltHash) {
+			 output[1] = salt;
+			 output[2] = hash;
 		 } else if (wantIterAlgo) {
-			 output += id + ":" + iterations + ":" + hash_algo;
+			 output[3] = Integer.toString(iterations);
+			 output[4] = hash_algo;		
 		 } 
 		 
 		  return output;
