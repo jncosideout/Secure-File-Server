@@ -30,9 +30,10 @@ public class TestMyJDBChandler {
 			System.err.println("connection not made");
 		}
 		
-		String[] results = handler.searchTable(myConnection, table, "'nrispine7'", "romeo@uh.edu", true, true);
-		System.out.println(results);
-		
+		String[] results = handler.searchTable(myConnection, table, "nrispine7", "despinos7@usnews.com", true, true);
+		for (String r : results) { 
+		System.out.println(r);
+		}
 		
 		
 //		String newSaltAndHash = new TestSaltHashPass().testHash();

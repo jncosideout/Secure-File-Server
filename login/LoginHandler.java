@@ -24,14 +24,9 @@ public class LoginHandler {
 	MyJDBChandler handler; 
 	String table = "user_account";
 	
-	public LoginHandler(SSLSocket socket) {
+	public LoginHandler(SSLSocket socket) throws IOException {
 		this.socket = socket;
-		try {
-			pw = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		pw = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
 		
 //		System.setProperty("javax.net.ssl.keyStore", "C:\\temp-openssl-32build\\serverKeystore\\serverkeystore");
 //		System.setProperty("javax.net.ssl.keyStorePassword", "serVerstoRepasS");
@@ -41,9 +36,9 @@ public class LoginHandler {
 		try {
 			//handler.loadDriver();
 			myConnection = handler.getConnection();
+			receiveRequest();
 			if (myConnection == null) {
 				System.err.println("connection not made");
-				receiveRequest();
 			}
 		} catch (SQLException s) {
 			handler.printSQLException(s);
@@ -67,8 +62,9 @@ public class LoginHandler {
 			String userName = in.nextLine();
 			String email = in.nextLine();
 			String password = in.nextLine();
-			String[] results = handler.searchTable(myConnection, table, "'nrispine7'", "romeo@uh.edu", true, false);
-
+			String[] results = handler.searchTable(myConnection, table, userName, email, true, false);
+			  //output[0] = id; [1] = salt; [2] = hash; [3] = iterations; [4] = hash_algo;
+			
 		}
 		in.close();
 	}

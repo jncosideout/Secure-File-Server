@@ -12,22 +12,13 @@ public class ServerThread implements Runnable {
 
 		private SSLSocket socket;
 		private String userName;
-		private final LinkedList<String> messagesToSend;
-		private boolean hasMessages = false;
 		
 		public ServerThread(SSLSocket socket, String userName) {
 			super();
 			this.socket = socket;
 			this.userName = userName;
-			messagesToSend = new LinkedList<String>();
 		}
 		
-		public void addNextMessage(String message) {
-			synchronized (messagesToSend) {
-				hasMessages = true;
-				messagesToSend.push(message);
-			}
-		}
 		
 		public void run(){
 			
@@ -37,8 +28,6 @@ public class ServerThread implements Runnable {
 			System.out.println("Server = " + socket.getRemoteSocketAddress() + ":" + socket.getPort());
 			
 			try {
-				// handshake
-				socket.startHandshake();
 				
 				//get session after connection is established
 				SSLSession session = socket.getSession();

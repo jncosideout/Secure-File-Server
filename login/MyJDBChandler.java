@@ -102,41 +102,38 @@ public class MyJDBChandler {
 			  boolean wantSaltHash, boolean wantIterAlgo) throws SQLException {
 		 Statement stmt = null;
 		 String query = null;
-		 String query1 = null;
 		 String salt = null;
 		 String hash = null;
 		 String id = null;
-		 int iterations = 40000;
+		 int iterations = 0;
 		 String hash_algo = null;
 		 
-		 if (wantSaltHash) {
+		 if (wantSaltHash && wantIterAlgo){
+			 query = "SELECT id, salt, hash, iterations, hash_algorithm FROM " + dbName + "." + tableName + 
+					  " WHERE user_name = \'" + userName  + "\'" + " AND email = \'" + email + "\'";		 }
+		 else if (wantSaltHash) {
 			 	query = "SELECT id, salt, hash FROM " + dbName + "." + tableName + 
 				  " WHERE user_name = \'" + userName  + "\'" + " AND email = \'" + email + "\'";
 			 } 
 		 
-		 if (wantIterAlgo) {
-				 query1 = "SELECT id, iterations, hash_algorithm FROM " + dbName + "." 
+		 else if (wantIterAlgo) {
+				 query = "SELECT id, iterations, hash_algorithm FROM " + dbName + "." 
 		 + tableName + " WHERE user_name = \'" + userName + "\'" + " AND email = \'" + email + "\'";
-			 } else if (!wantSaltHash && !wantIterAlgo){
+			 }
+		 else if (!wantSaltHash && !wantIterAlgo){
 				 System.out.println("uspecified query");
 			 }
 		 
 		 try {
 			 stmt = con.createStatement();
 			 ResultSet rs = null;
-			 if (wantSaltHash) {
-				 rs = stmt.executeQuery(query);
-				 while (rs.next()) {
-					 id = rs.getString("id");
+			 rs = stmt.executeQuery(query);
+			 while (rs.next()) {
+				 id = rs.getString("id");
+				   if (wantSaltHash) {
 					 salt = rs.getString("salt");
 					 hash = rs.getString("hash");
-				 }
-			 } 
-			 
-			 if (wantIterAlgo) {
-				 rs = stmt.executeQuery(query1);
-				 while (rs.next()) {
-					 id = rs.getString("id");
+				 } if (wantIterAlgo) {
 					 iterations = rs.getInt("iterations");
 					 hash_algo = rs.getString("hash_algorithm");
 				 }
@@ -150,10 +147,10 @@ public class MyJDBChandler {
 		 String[] output = new String[5];
 		 output[0] = id;
 		 
-		 if (wantSaltHash) {
+		   if (wantSaltHash) {
 			 output[1] = salt;
 			 output[2] = hash;
-		 } else if (wantIterAlgo) {
+		 } if (wantIterAlgo) {
 			 output[3] = Integer.toString(iterations);
 			 output[4] = hash_algo;		
 		 } 

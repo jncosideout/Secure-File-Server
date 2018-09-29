@@ -75,6 +75,8 @@ public class EchoClient
     	SSLSocket sock = connect(factory);
     	
     	try {
+    		// handshake
+			sock.startHandshake();
     		UserLogin ul = new UserLogin(sock);
 			startChat(sock, scan);
 		} catch (IOException e) {

@@ -16,12 +16,15 @@ public class UserLogin {
 	
 	public UserLogin(SSLSocket sock) throws IOException {
 		Scanner userInputScanner = new Scanner(System.in);
-
+		socket = sock;
+		pw = new PrintWriter(new OutputStreamWriter(sock.getOutputStream()));
+		
 		 System.out.println("New user or returning user?");
-		 String choice = "return";
+		 String choice = null;
 		 while (choice == null || choice.trim().equals("")) {
 				try{
-					choice = userInputScanner.nextLine();
+					choice = "returning";
+							//userInputScanner.nextLine();
 				    if (choice.trim().contains("new")) {
 				    	System.out.println("Please type new username and press enter");
 				    	userName = userInputScanner.nextLine();
@@ -32,14 +35,15 @@ public class UserLogin {
 				    	registerNewUser();
 					} else if (choice.trim().contains("return")) {
 						System.out.println("Welcome back. Please enter your username");
-						userName = "'beatya4'";
+						userName = "beatya4";
 						//userInputScanner.nextLine();
 				    	System.out.println("Please type your email and press enter");
-						email = "'asbeaty@uh.edu'";
+						email = "asbeaty@uh.edu";
 						//userInputScanner.nextLine();
 				    	System.out.println("Please type your password and press enter");
 				    	givenPassword = "apple3456";
 				    			//userInputScanner.nextLine();
+				    	returningUser();
 					} else {
 				    	System.out.println("Usernames/password must not be blank. Please try again");
 
@@ -52,10 +56,6 @@ public class UserLogin {
 		 
 		 
 		userInputScanner.close();
-		socket = sock;
-		pw = new PrintWriter(new OutputStreamWriter(sock.getOutputStream()));
-
-		
 	}
 	
 	protected void registerNewUser() {
@@ -82,9 +82,14 @@ public class UserLogin {
 	protected boolean returningUser() {
 		boolean granted = false;		
 		try {			
-			pw.write("RETURNING_USER");
+			pw.println("RETURNING_USER");
 			pw.flush();
-			
+			try {
+				Thread.sleep(200);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			sendCredentials();
 			granted = receiveValidation();
 			
@@ -100,13 +105,20 @@ public class UserLogin {
 	}
 	
 	protected void sendCredentials() throws IOException {
-					
-			pw.write(userName);
+	try {		
+			pw.println(userName);
 			pw.flush();
-			pw.write(email);
+			Thread.sleep(200);
+			pw.println(email);
 			pw.flush();
-			pw.write(givenPassword);
+			Thread.sleep(200);
+			pw.println(givenPassword);
 			pw.flush();
+			Thread.sleep(200);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 			
 	}
 	

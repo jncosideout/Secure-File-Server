@@ -73,9 +73,6 @@ public class EchoThread extends Thread
 		//socket.setEnabledCipherSuites(socket.getSupportedCipherSuites());
 
 	try{
-		//start handshake
-		socket.startHandshake();
-		
 	  //setup i/o
 		this.clientOut = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
 		Scanner in = new Scanner(socket.getInputStream());

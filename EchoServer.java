@@ -27,7 +27,7 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 
 import java.util.ArrayList;
-
+import login.LoginHandler;
 /**
  * A simple server class.  Accepts client connections and forks
  * EchoThreads to handle the bulk of the work.
@@ -193,8 +193,11 @@ public class EchoServer
 			 while(true){// Loop to work on new connections while this
 			        // the accept()ed connection is handled
 				    	try {
-				    		sock = (SSLSocket) serverSocket.accept();     // Accept an incoming connection from CLIENT
+				    		// Accept an incoming connection from CLIENT
+				    		sock = (SSLSocket) serverSocket.accept(); 
+				  //  		sock.startHandshake();
 				    		System.out.println("Accepts: " + sock.getRemoteSocketAddress());
+				    		LoginHandler lh = new LoginHandler(sock); 
 				    		EchoThread client = new EchoThread(this, sock);
 				    		client.start();                 // Fork the thread
 				    		clients.add(client);
