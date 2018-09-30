@@ -13,9 +13,9 @@ public class UserLogin {
 	private String givenPassword;
 	private SSLSocket socket;
 	PrintWriter pw;
+	private boolean verified = false;
 	
-	public UserLogin(SSLSocket sock) throws IOException {
-		Scanner userInputScanner = new Scanner(System.in);
+	public UserLogin(SSLSocket sock, Scanner userInputScanner) throws IOException {
 		socket = sock;
 		pw = new PrintWriter(new OutputStreamWriter(sock.getOutputStream()));
 		
@@ -43,7 +43,7 @@ public class UserLogin {
 				    	System.out.println("Please type your password and press enter");
 				    	givenPassword = "apple3456";
 				    			//userInputScanner.nextLine();
-				    	returningUser();
+				    	verified = returningUser();
 					} else {
 				    	System.out.println("Usernames/password must not be blank. Please try again");
 
@@ -53,15 +53,12 @@ public class UserLogin {
 				    e.printStackTrace(System.err);
 					}
 	 	}
-		 
-		 
-		userInputScanner.close();
 	}
 	
 	protected void registerNewUser() {
 		SaltHashPassW hashP = new SaltHashPassW(givenPassword, 40000); 
 		try {
-			String [] itSaHa = hashP.generatePasswordHash(64, "PBKDF2WithHmacSHA256");
+			String [] itSaHa = hashP.createNewHash();
 			this.givenPassword = itSaHa[2];
 					
 			pw.write("NEW_USER");
@@ -70,9 +67,6 @@ public class UserLogin {
 			sendCredentials();
 		} catch (IOException e) {
 			System.err.println(e.getMessage());
-			e.printStackTrace();
-		} catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -123,14 +117,18 @@ public class UserLogin {
 	}
 	
 	protected boolean receiveValidation() throws IOException {
-		boolean granted = false;
+		boolean access = false;
 		
 		Scanner in = new Scanner(socket.getInputStream());
 			
-		if (in.hasNextBoolean()) {
-			granted = in.nextBoolean();
+		if (in.hasNextLine()) {
+			String reply = in.nextLine();
+			if (reply.equals("denied")) { access = false;}
+			else if (reply.equals("granted")) {access = true;}
 		}
-		in.close();
-		return granted;
+		return access;
 	}
-}
+	
+	public String getUserName(){ return userName;}
+	public boolean getVerified(){ return verified;}
+}//eoc

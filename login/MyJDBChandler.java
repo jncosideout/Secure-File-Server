@@ -72,7 +72,7 @@ public class MyJDBChandler {
 		
 	  
 	  public void closeConnection(Connection connArg) {
-		    System.out.println("Releasing all open resources ...");
+		    System.out.println("Releasing all open database resources ...");
 		    try {
 		      if (connArg != null) {
 		        connArg.close();

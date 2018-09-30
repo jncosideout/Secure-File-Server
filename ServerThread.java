@@ -35,6 +35,7 @@ public class ServerThread implements Runnable {
 				System.out.println("Session details: ");
 				System.out.println("\tProtocol: " + session.getProtocol());
 				System.out.println("\tCipher suite: " + session.getCipherSuite());
+				System.out.println("Begin chatting.");
 				
 				//this thread is now INPUT only
 				InputStream serverInStream = socket.getInputStream();

@@ -77,8 +77,14 @@ public class EchoClient
     	try {
     		// handshake
 			sock.startHandshake();
-    		UserLogin ul = new UserLogin(sock);
-			startChat(sock, scan);
+			System.out.println("handshake complete");
+    		UserLogin ul = new UserLogin(sock, scan);
+    		//use an accessor function instead of public mem var
+    		if (!ul.getVerified()) {
+    			System.out.println("Access denied. Exiting program");
+    			System.exit(1);
+    			} else {System.out.println("Access granted."); }
+			startChat(sock, scan, ul.getUserName());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -198,7 +204,7 @@ public class EchoClient
 		return sock;  
     }
     
-    public void startChat(SSLSocket sock, Scanner scan) throws IOException, InterruptedException {
+    public void startChat(SSLSocket sock, Scanner scan, String userName) throws IOException, InterruptedException {
 
 	    ServerThread serverThread = new ServerThread(sock, userName);
 	    Thread serverAccessThread = new Thread(serverThread);

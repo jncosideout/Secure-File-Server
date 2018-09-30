@@ -198,6 +198,7 @@ public class EchoServer
 				  //  		sock.startHandshake();
 				    		System.out.println("Accepts: " + sock.getRemoteSocketAddress());
 				    		LoginHandler lh = new LoginHandler(sock); 
+				    		if (!lh.getVerified()) { continue;}
 				    		EchoThread client = new EchoThread(this, sock);
 				    		client.start();                 // Fork the thread
 				    		clients.add(client);
