@@ -17,6 +17,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 
+import javax.net.ssl.HandshakeCompletedEvent;
+import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLContext;
@@ -28,6 +30,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 import java.util.ArrayList;
 import login.LoginHandler;
+import rsaEncryptSign.DHKeyAlice;
 /**
  * A simple server class.  Accepts client connections and forks
  * EchoThreads to handle the bulk of the work.
@@ -67,7 +70,12 @@ public class EchoServer
 	    ArrayList<char[]> jksPassWs = server.assignKeystorePaths();
     	SSLContext sc = server.initSSLContext(jksPassWs);
 	    SSLServerSocket serverSock = server.startServer(sc);
-    	server.acceptClients(serverSock);
+    	try {
+			server.acceptClients(serverSock);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
     }
 
@@ -184,7 +192,7 @@ public class EchoServer
     	return sc;
     }
 	
-    private void acceptClients(SSLServerSocket serverSocket) {
+    private void acceptClients(SSLServerSocket serverSocket) throws InterruptedException {
     	// A simple infinite loop to accept connections
 	    SSLSocket sock = null;
 	    //Thread thread = null;
@@ -195,8 +203,18 @@ public class EchoServer
 				    	try {
 				    		// Accept an incoming connection from CLIENT
 				    		sock = (SSLSocket) serverSocket.accept(); 
-				  //  		sock.startHandshake();
 				    		System.out.println("Accepts: " + sock.getRemoteSocketAddress());
+				    		//wait for handshake
+				    		//sock.startHandshake();
+							//System.out.println("handshake complete");
+//				    		sock.addHandshakeCompletedListener(new HandshakeCompletedListener() {
+//				                @Override
+//				                public void handshakeCompleted(HandshakeCompletedEvent handshakeCompletedEvent) {
+//				                	DHKeyAlice dhka = new DHKeyAlice(sock);
+//				                }
+//				            });
+				    		System.out.println("begin dh key exchange SERVER");
+							DHKeyAlice dhka = new DHKeyAlice(sock);
 				    		LoginHandler lh = new LoginHandler(sock); 
 				    		if (!lh.getVerified()) { continue;}
 				    		EchoThread client = new EchoThread(this, sock);

@@ -14,6 +14,7 @@ import java.security.SecureRandom;
 import javax.net.ssl.*;
 
 import login.UserLogin;
+import rsaEncryptSign.DHKeyBob;
 
 import java.io.Console;				//used for system.console.readPassword() which isn't working
 import java.io.ObjectInputStream;   // Used to read objects sent from the server
@@ -76,8 +77,11 @@ public class EchoClient
     	
     	try {
     		// handshake
-			sock.startHandshake();
-			System.out.println("handshake complete");
+//			sock.startHandshake();
+//			System.out.println("handshake complete");
+    		Thread.sleep(1000);
+    		System.out.println("begin dh key exchange CLIENT");
+			DHKeyBob dhkb = new DHKeyBob(sock);
     		UserLogin ul = new UserLogin(sock, scan);
     		//use an accessor function instead of public mem var
     		if (!ul.getVerified()) {

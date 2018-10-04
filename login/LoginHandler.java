@@ -30,7 +30,7 @@ public class LoginHandler {
 		handler = new MyJDBChandler("mysql", "secure_chat_db", "root", "comodo25PAnda", "localhost", 3306);
 		
 		try {
-			//handler.loadDriver();
+			handler.loadDriver();
 			myConnection = handler.getConnection();
 			receiveRequest();
 			if (myConnection == null) {
