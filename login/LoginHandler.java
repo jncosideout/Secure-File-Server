@@ -3,25 +3,36 @@ package login;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Scanner;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.net.ssl.SSLSocket;
+
+import myClient.AES;
+import rsaEncryptSign.DHCryptoReceiver;
 
 public class LoginHandler {
 
-	SSLSocket socket;
-	PrintWriter pw;
-	Connection myConnection;
-	MyJDBChandler handler; 
-	String table = "user_account";
+	private SSLSocket socket;
+	private PrintWriter pw;
+	private Connection myConnection;
+	private MyJDBChandler handler; 
+	private String table = "user_account";
 	private boolean verified = false;
+	AES serverAes;
 	
-	public LoginHandler(SSLSocket socket) throws IOException {
+	public LoginHandler(SSLSocket socket, AES serverAes) throws IOException {
 		this.socket = socket;
+		this.serverAes = serverAes;
 		pw = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
 		
 //		System.setProperty("javax.net.ssl.keyStore", "C:\\temp-openssl-32build\\serverKeystore\\serverkeystore");
@@ -58,9 +69,16 @@ public class LoginHandler {
 		if (request.equals("NEW_USER")) {
 			insertNewUser();
 		} else if (request.equals("RETURNING_USER")) {
-			String userName = in.nextLine();
-			String email = in.nextLine();
-			String password = in.nextLine();
+			String userName = null, email = null, password = null;
+			try {
+				userName = serverAes.decrypt(in.nextLine());
+				email = serverAes.decrypt(in.nextLine());
+				password = serverAes.decrypt(in.nextLine());
+			} catch (InvalidKeyException | NoSuchPaddingException | InvalidAlgorithmParameterException
+					| IllegalBlockSizeException | BadPaddingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			String[] results = handler.searchTable(myConnection, table, userName, email, true, true);
 			  //output[0] = id; [1] = salt; [2] = hash; [3] = iterations; [4] = hash_algo;
 			sendAnswer(verify(results, password));

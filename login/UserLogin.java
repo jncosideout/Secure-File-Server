@@ -1,7 +1,15 @@
 package login;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.net.ssl.*;
+
+import myClient.AES;
+import rsaEncryptSign.DHCryptoInitiator;
+
 import java.io.*;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Scanner;
@@ -12,11 +20,14 @@ public class UserLogin {
 	private String email;
 	private String givenPassword;
 	private SSLSocket socket;
-	PrintWriter pw;
+	private PrintWriter pw;
 	private boolean verified = false;
+	AES userAes;
 	
-	public UserLogin(SSLSocket sock, Scanner userInputScanner) throws IOException {
+	public UserLogin(SSLSocket sock, Scanner userInputScanner, AES userAes) throws IOException {
 		socket = sock;
+		this.userAes = userAes;
+		
 		pw = new PrintWriter(new OutputStreamWriter(sock.getOutputStream()));
 		
 		 System.out.println("New user or returning user?");
@@ -100,19 +111,25 @@ public class UserLogin {
 	
 	protected void sendCredentials() throws IOException {
 	try {		
-			pw.println(userName);
+			pw.println(userAes.encrypt(userName));
 			pw.flush();
-			Thread.sleep(200);
-			pw.println(email);
+			Thread.sleep(100);
+			pw.println(userAes.encrypt(email));
 			pw.flush();
-			Thread.sleep(200);
-			pw.println(givenPassword);
+			Thread.sleep(100);
+			pw.println(userAes.encrypt(givenPassword));
 			pw.flush();
-			Thread.sleep(200);
+			Thread.sleep(100);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		} catch (IllegalBlockSizeException | BadPaddingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
 			
 	}
 	

@@ -30,6 +30,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 import java.util.ArrayList;
 import login.LoginHandler;
+import rsaEncryptSign.DHCryptoReceiver;
 import rsaEncryptSign.DHKeyAlice;
 /**
  * A simple server class.  Accepts client connections and forks
@@ -215,7 +216,8 @@ public class EchoServer
 //				            });
 				    		System.out.println("begin dh key exchange SERVER");
 							DHKeyAlice dhka = new DHKeyAlice(sock);
-				    		LoginHandler lh = new LoginHandler(sock); 
+							AES serverAes = new AES(dhka.getAliceSecret());
+							LoginHandler lh = new LoginHandler(sock, serverAes); 
 				    		if (!lh.getVerified()) { continue;}
 				    		EchoThread client = new EchoThread(this, sock);
 				    		client.start();                 // Fork the thread
@@ -224,7 +226,7 @@ public class EchoServer
 				    	} catch (IOException io) {
 				    		System.out.println("Accept failed on " + SERVER_PORT);
 				    		io.printStackTrace();
-				    	}
+				    	} 
 				    }
     }
     

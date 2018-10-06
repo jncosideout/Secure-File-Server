@@ -7,13 +7,16 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.cert.Certificate;
+import java.security.InvalidKeyException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.SecureRandom;
 
+import javax.crypto.NoSuchPaddingException;
 import javax.net.ssl.*;
 
 import login.UserLogin;
+import rsaEncryptSign.DHCryptoInitiator;
 import rsaEncryptSign.DHKeyBob;
 
 import java.io.Console;				//used for system.console.readPassword() which isn't working
@@ -82,7 +85,8 @@ public class EchoClient
     		Thread.sleep(1000);
     		System.out.println("begin dh key exchange CLIENT");
 			DHKeyBob dhkb = new DHKeyBob(sock);
-    		UserLogin ul = new UserLogin(sock, scan);
+    		AES userAes = new AES(dhkb.getBobSecret());
+			UserLogin ul = new UserLogin(sock, scan, userAes);
     		//use an accessor function instead of public mem var
     		if (!ul.getVerified()) {
     			System.out.println("Access denied. Exiting program");

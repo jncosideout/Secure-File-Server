@@ -18,23 +18,27 @@ import javax.xml.bind.DatatypeConverter;
 
 public class AES 
 {
-	private static final String ALGORITHM = "AES/CTR/NoPadding";
-	private static final String CODIFICACION = "UTF-8";
-	public static String keyAJ = "A1BE465D57CAE7ACDCBE8091FACE83DA";
-	public static String keyJK = "E9DE465D57CAE7ACDCBE8091DACE85DA";
-
+	private static final String ALGORITHM = "AES/CBC/PKCS5Padding";
+	private static final String CODIFICATION = "UTF-8";
+	byte[] sharedSecret;
+	public Cipher cipher;
+	
+	public AES(byte[] sharedSecret) {
+		this.sharedSecret = sharedSecret;
+	}
+	
 	//Encrypt Function
-	public static String encrypt(String plaintext, String key) throws NoSuchAlgorithmException, NoSuchPaddingException,InvalidKeyException, IllegalBlockSizeException,BadPaddingException, IOException{
+	public String encrypt(String plaintext) throws NoSuchAlgorithmException, NoSuchPaddingException,InvalidKeyException, IllegalBlockSizeException,BadPaddingException, IOException{
 	 
 
-	    byte[] raw = DatatypeConverter.parseHexBinary(key);          //Converts the string key into an array of bytes
-	 SecretKeySpec skeySpec = new SecretKeySpec(raw, "AES");  //SecretKeySpec used to construct a SecretKey from raw byte array
+	   // byte[] raw = DatatypeConverter.parseHexBinary(key);          //Converts the string key into an array of bytes
+	 SecretKeySpec skeySpec = new SecretKeySpec(sharedSecret, 0, 16, "AES");  //SecretKeySpec used to construct a SecretKey from raw byte array
 	        
 	 Cipher cipher = Cipher.getInstance(ALGORITHM);         //getting encryption algorithm
 	                                    
 	 cipher.init(Cipher.ENCRYPT_MODE, skeySpec);           //initializing the cipher with a key and encrypt mode
 	        
-	 byte[] cipherText = cipher.doFinal(plaintext.getBytes(CODIFICACION)); //saving the plaintext file and coverting it to bytes and using cipher on it
+	 byte[] cipherText = cipher.doFinal(plaintext.getBytes(CODIFICATION)); //saving the plaintext file and coverting it to bytes and using cipher on it
 	        
 	 byte[] iv = cipher.getIV();         //Initialization Vector 
 	        
@@ -52,13 +56,13 @@ public class AES
 	}
 	//Decrypt Function
 	//The same parameters that were used for encryption must be used for decryption
-	public static String decrypt(String encodedInitialData, String key)throws InvalidKeyException, IllegalBlockSizeException,BadPaddingException, UnsupportedEncodingException,NoSuchAlgorithmException, NoSuchPaddingException,InvalidAlgorithmParameterException{
+	public String decrypt(String encodedInitialData)throws InvalidKeyException, IllegalBlockSizeException,BadPaddingException, UnsupportedEncodingException,NoSuchAlgorithmException, NoSuchPaddingException,InvalidAlgorithmParameterException{
 	 
 	    byte[] encryptedData = DatatypeConverter.parseBase64Binary(encodedInitialData); //Converts the string into an array of bytes
 	    
-	 byte[] raw = DatatypeConverter.parseHexBinary(key); //Converts the string key into an array of bytes
+	// byte[] raw = DatatypeConverter.parseHexBinary(key); //Converts the string key into an array of bytes
 	        
-	 SecretKeySpec skeySpec = new SecretKeySpec(raw, "AES"); //constructs secret key
+	 SecretKeySpec skeySpec = new SecretKeySpec(sharedSecret, 0, 16, "AES"); //constructs secret key
 	 Cipher cipher = Cipher.getInstance(ALGORITHM);  
 	        
 	 byte[] iv = Arrays.copyOfRange(encryptedData, 0, 16); //copies the ecryptedData array into iv array 
