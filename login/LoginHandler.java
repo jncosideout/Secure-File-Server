@@ -28,39 +28,43 @@ public class LoginHandler {
 	private MyJDBChandler handler; 
 	private String table = "user_account";
 	private boolean verified = false;
-	AES serverAes;
+	public boolean initiator;
+	private Scanner in;
+	private AES serverAes;
 	
 	public LoginHandler(SSLSocket socket, AES serverAes) throws IOException {
 		this.socket = socket;
 		this.serverAes = serverAes;
 		pw = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
+		in = new Scanner(socket.getInputStream());
+		String choice = in.nextLine();
+    	if (choice.toUpperCase().contains("YES")) {initiator = true;} else {initiator = false;}
 		
 //		System.setProperty("javax.net.ssl.keyStore", "C:\\temp-openssl-32build\\serverKeystore\\serverkeystore");
 //		System.setProperty("javax.net.ssl.keyStorePassword", "serVerstoRepasS");
 		
-		handler = new MyJDBChandler("mysql", "secure_chat_db", "root", "comodo25PAnda", "localhost", 3306);
-		
-		try {
-			handler.loadDriver();
-			myConnection = handler.getConnection();
-			receiveRequest();
-			if (myConnection == null) {
-				System.err.println("connection not made");
-			}
-		} catch (SQLException s) {
-			handler.printSQLException(s);
-		} catch (IOException io) {
-			io.printStackTrace();
-		}catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			handler.closeConnection(myConnection);
-		}
+//		handler = new MyJDBChandler("mysql", "secure_chat_db", "root", "comodo25PAnda", "localhost", 3306);
+//		
+//		try {
+//			handler.loadDriver();
+//			myConnection = handler.getConnection();
+//			receiveRequest();
+//			if (myConnection == null) {
+//				System.err.println("connection not made");
+//			}
+//		} catch (SQLException s) {
+//			handler.printSQLException(s);
+//		} catch (IOException io) {
+//			io.printStackTrace();
+//		}catch (Exception e) {
+//			e.printStackTrace();
+//		} finally {
+//			handler.closeConnection(myConnection);
+//		}
 
 	}
 
 	protected void receiveRequest() throws IOException, SQLException, NoSuchAlgorithmException, InvalidKeySpecException {
-		Scanner in = new Scanner(socket.getInputStream());
 		String request = null;
 		if (in.hasNextLine()) {
 			request = in.nextLine();
@@ -113,5 +117,9 @@ public class LoginHandler {
 	private boolean updateUser() {
 		return false;
 	}
+	
 	public boolean getVerified(){ return verified;}
+	
+	public boolean getInitiator(){ return initiator;}
+
 }//eoc

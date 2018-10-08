@@ -44,7 +44,8 @@ public class EchoServer
     public static final int SERVER_PORT = 7756;
     private int serverPort;
     
-    private List<EchoThread> clients;
+    List<EchoThread> clients;
+    private List<DHKeyEchoThread2> DHClients;
     
 	public static String[][] usernames;
 	public static boolean exiting = false;
@@ -82,6 +83,8 @@ public class EchoServer
 
     private SSLServerSocket startServer(SSLContext sc){
     	clients = new ArrayList<EchoThread>();
+    	DHClients = new ArrayList<DHKeyEchoThread2>();
+
     		
     	SSLServerSocketFactory sslServSockFact = sc.getServerSocketFactory();
 		SSLServerSocket serverSock = null;
@@ -129,9 +132,8 @@ public class EchoServer
 		return passwords;  
     }
     
-	public List<EchoThread> getClients() {
-		return clients;
-	}
+    public List<DHKeyEchoThread2> getDHClients(){return DHClients;}
+	public List<EchoThread> getClients() {return clients;}
 	
 	public void removeClient(EchoThread et) {
 		clients.remove(et);
@@ -205,24 +207,16 @@ public class EchoServer
 				    		// Accept an incoming connection from CLIENT
 				    		sock = (SSLSocket) serverSocket.accept(); 
 				    		System.out.println("Accepts: " + sock.getRemoteSocketAddress());
-				    		//wait for handshake
-				    		//sock.startHandshake();
-							//System.out.println("handshake complete");
-//				    		sock.addHandshakeCompletedListener(new HandshakeCompletedListener() {
-//				                @Override
-//				                public void handshakeCompleted(HandshakeCompletedEvent handshakeCompletedEvent) {
-//				                	DHKeyAlice dhka = new DHKeyAlice(sock);
-//				                }
-//				            });
 				    		System.out.println("begin dh key exchange SERVER");
-							DHKeyAlice dhka = new DHKeyAlice(sock);
-							AES serverAes = new AES(dhka.getAliceSecret());
+							DHKeyAlice dhka = null;
+//									new DHKeyAlice(sock);
+							AES serverAes = null;
+									//new AES(dhka.getAliceSecret());
 							LoginHandler lh = new LoginHandler(sock, serverAes); 
-				    		if (!lh.getVerified()) { continue;}
-				    		EchoThread client = new EchoThread(this, sock);
-				    		client.start();                 // Fork the thread
-				    		clients.add(client);
-				    		
+				    	//	if (!lh.getVerified()) { continue;}
+				    		DHKeyEchoThread2 dhThread = new DHKeyEchoThread2(this, sock, lh.initiator);
+				    		dhThread.start();
+				    		DHClients.add(dhThread);
 				    	} catch (IOException io) {
 				    		System.out.println("Accept failed on " + SERVER_PORT);
 				    		io.printStackTrace();

@@ -12,11 +12,14 @@ import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.SecureRandom;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.net.ssl.*;
 
 import login.UserLogin;
 import rsaEncryptSign.DHCryptoInitiator;
+import rsaEncryptSign.DHKeyAlice;
 import rsaEncryptSign.DHKeyBob;
 
 import java.io.Console;				//used for system.console.readPassword() which isn't working
@@ -79,24 +82,37 @@ public class EchoClient
     	SSLSocket sock = connect(factory);
     	
     	try {
-    		// handshake
-//			sock.startHandshake();
-//			System.out.println("handshake complete");
-    		Thread.sleep(1000);
-    		System.out.println("begin dh key exchange CLIENT");
-			DHKeyBob dhkb = new DHKeyBob(sock);
-    		AES userAes = new AES(dhkb.getBobSecret());
+    		
+			DHKeyAlice dhka = null; //possible DHKeyAlice
+//    		Thread.sleep(200);
+//    		System.out.println("begin dh key exchange CLIENT");
+			DHKeyBob dhkb = null;
+					//new DHKeyBob(sock);
+    		AES userAes = null;
+    				//new AES(dhkb.getBobSecret());
 			UserLogin ul = new UserLogin(sock, scan, userAes);
-    		//use an accessor function instead of public mem var
-    		if (!ul.getVerified()) {
-    			System.out.println("Access denied. Exiting program");
-    			System.exit(1);
-    			} else {System.out.println("Access granted."); }
-			startChat(sock, scan, ul.getUserName());
+//    		if (!ul.getVerified()) {
+//    			System.out.println("Access denied. Exiting program");
+//    			System.exit(1);
+//    			} else {System.out.println("Access granted."); }
+    		if (ul.getInitiator()) {
+	    		System.out.println("Please hold for your correspondent to log in." );
+				dhka = new DHKeyAlice(sock);
+				userAes = new AES(dhka.getAliceSecret());
+			} else {
+	    		System.out.println("You are the second user. Your correspondent has initiated Diffie-Hellman." );
+				dhkb = new DHKeyBob(sock);
+				userAes = new AES(dhkb.getBobSecret());
+			}
+			startChat(sock, scan, ul.getUserName(), userAes);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InvalidKeyException | NoSuchAlgorithmException | 
+				NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} 
@@ -212,9 +228,10 @@ public class EchoClient
 		return sock;  
     }
     
-    public void startChat(SSLSocket sock, Scanner scan, String userName) throws IOException, InterruptedException {
+    public void startChat(SSLSocket sock, Scanner scan, String userName, AES userAes) throws IOException, InterruptedException,
+    InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException {
 
-	    ServerThread serverThread = new ServerThread(sock, userName);
+	    ServerThread serverThread = new ServerThread(sock, userName, userAes);
 	    Thread serverAccessThread = new Thread(serverThread);
 	    serverAccessThread.start();
 	    
@@ -229,8 +246,8 @@ public class EchoClient
 	    			break;
 	    		}
 	    		else {
-					String nextSend = scan.nextLine();
-					serverOut.println(userName + " > " + nextSend);
+					String nextSend = userName + " > " + scan.nextLine();
+					serverOut.println(userAes.encrypt(nextSend));
 					serverOut.flush();
 				
 					/*make sure 

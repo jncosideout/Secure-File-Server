@@ -22,7 +22,8 @@ public class UserLogin {
 	private SSLSocket socket;
 	private PrintWriter pw;
 	private boolean verified = false;
-	AES userAes;
+	private boolean initiator;
+	private AES userAes;
 	
 	public UserLogin(SSLSocket sock, Scanner userInputScanner, AES userAes) throws IOException {
 		socket = sock;
@@ -45,7 +46,7 @@ public class UserLogin {
 				    	givenPassword = userInputScanner.nextLine();
 				    	registerNewUser();
 					} else if (choice.trim().contains("return")) {
-						System.out.println("Welcome back. Please enter your username");
+						System.out.println("Welcome back.\n Please enter your username");
 						userName = "beatya4";
 						//userInputScanner.nextLine();
 				    	System.out.println("Please type your email and press enter");
@@ -54,7 +55,12 @@ public class UserLogin {
 				    	System.out.println("Please type your password and press enter");
 				    	givenPassword = "apple3456";
 				    			//userInputScanner.nextLine();
-				    	verified = returningUser();
+				    	System.out.println("Please type YES to initiate Diffie-Hellman \n NO to receive request");
+				    	String choice2 = userInputScanner.nextLine();
+				    	if (choice2.toUpperCase().contains("YES")) {initiator = true;} else {initiator = false;}
+				    	pw.println(choice2);
+				    	pw.flush();
+				    	//verified = returningUser();
 					} else {
 				    	System.out.println("Usernames/password must not be blank. Please try again");
 
@@ -148,4 +154,6 @@ public class UserLogin {
 	
 	public String getUserName(){ return userName;}
 	public boolean getVerified(){ return verified;}
+	public boolean getInitiator(){ return initiator;}
+
 }//eoc

@@ -4,10 +4,7 @@ package myClient;
 
 
 import java.lang.Thread;            // We will extend Java's base Thread class
-import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -18,17 +15,18 @@ import java.io.OutputStreamWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.PrintWriter;
-
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Scanner;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
@@ -43,10 +41,6 @@ public class EchoThread extends Thread
 	private PrintWriter clientOut;
 	private EchoServer server;
 	private SSLSocket socket; // The socket that we'll be talking over
-	
-	public String mPassword; // to store the user's input for password verification
-	public String mUsername;// to store the user's input for password verification
-	public String UserENCRYPTkey; // to compare the user's input for encryption key verification
 	final static Charset ENCODING = StandardCharsets.UTF_8;
 	
     /**
@@ -63,9 +57,7 @@ public class EchoThread extends Thread
     
 
 
-    private PrintWriter getClientOut() {
-		return clientOut;
-	}
+    private PrintWriter getClientOut() {return clientOut;}
     
    
     public void run()
@@ -138,44 +130,5 @@ public class EchoThread extends Thread
 
     }  //-- end run()
     
-      
-    void overwrite(String path, String userfile)// overwrite text files
-    {
-    File fold=new File(path);
-    fold.delete();
-    File fnew=new File(path);
-    
-
-    try {
-        FileWriter f2 = new FileWriter(fnew, false);
-        f2.write(userfile);
-        f2.close();
-    } catch (IOException e) {
-        e.printStackTrace();
-    }     
-    }
-
-	public void scanFile(String path,ArrayList<String> list)// reads text files into array
-	{
-	    try(BufferedReader br = new BufferedReader(new FileReader(path)))
-	    {
-	        StringBuilder sb = new StringBuilder();
-	        String line = br.readLine();
-	        while (line != null) {
-	            sb.append(line);
-	            sb.append(System.lineSeparator());
-	            line = br.readLine();
-	        }
-	        String everything = sb.toString();
-	        list.add(everything) ;
-	      //  System.out.print(everything);
-	    } catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
 } //-- end class EchoThread
 
