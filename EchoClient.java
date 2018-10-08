@@ -86,15 +86,13 @@ public class EchoClient
 			DHKeyAlice dhka = null; //possible DHKeyAlice
 //    		Thread.sleep(200);
 //    		System.out.println("begin dh key exchange CLIENT");
-			DHKeyBob dhkb = null;
-					//new DHKeyBob(sock);
-    		AES userAes = null;
-    				//new AES(dhkb.getBobSecret());
+			DHKeyBob dhkb = new DHKeyBob(sock);					//TEST NULL
+    		AES userAes = new AES(dhkb.getBobSecret());			//TEST NULL
 			UserLogin ul = new UserLogin(sock, scan, userAes);
-//    		if (!ul.getVerified()) {
-//    			System.out.println("Access denied. Exiting program");
-//    			System.exit(1);
-//    			} else {System.out.println("Access granted."); }
+    		if (!ul.getVerified()) {								//TEST
+    			System.out.println("Access denied. Exiting program");//TEST
+    			System.exit(1);
+    			} else {System.out.println("Access granted."); }//TEST
     		if (ul.getInitiator()) {
 	    		System.out.println("Please hold for your correspondent to log in." );
 				dhka = new DHKeyAlice(sock);

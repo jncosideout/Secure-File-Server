@@ -43,24 +43,24 @@ public class LoginHandler {
 //		System.setProperty("javax.net.ssl.keyStore", "C:\\temp-openssl-32build\\serverKeystore\\serverkeystore");
 //		System.setProperty("javax.net.ssl.keyStorePassword", "serVerstoRepasS");
 		
-//		handler = new MyJDBChandler("mysql", "secure_chat_db", "root", "comodo25PAnda", "localhost", 3306);
-//		
-//		try {
-//			handler.loadDriver();
-//			myConnection = handler.getConnection();
-//			receiveRequest();
-//			if (myConnection == null) {
-//				System.err.println("connection not made");
-//			}
-//		} catch (SQLException s) {
-//			handler.printSQLException(s);
-//		} catch (IOException io) {
-//			io.printStackTrace();
-//		}catch (Exception e) {
-//			e.printStackTrace();
-//		} finally {
-//			handler.closeConnection(myConnection);
-//		}
+		handler = new MyJDBChandler("mysql", "secure_chat_db", "root", "comodo25PAnda", "localhost", 3306);
+		
+		try {
+			handler.loadDriver();
+			myConnection = handler.getConnection();
+			receiveRequest();
+			if (myConnection == null) {
+				System.err.println("connection not made");
+			}
+		} catch (SQLException s) {
+			handler.printSQLException(s);
+		} catch (IOException io) {
+			io.printStackTrace();
+		}catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			handler.closeConnection(myConnection);
+		}
 
 	}
 

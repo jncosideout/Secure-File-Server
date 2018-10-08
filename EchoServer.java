@@ -198,7 +198,6 @@ public class EchoServer
     private void acceptClients(SSLServerSocket serverSocket) throws InterruptedException {
     	// A simple infinite loop to accept connections
 	    SSLSocket sock = null;
-	    //Thread thread = null;
 	    System.out.println("Server starts port  " + serverSocket.getLocalSocketAddress());
  	
 			 while(true){// Loop to work on new connections while this
@@ -208,12 +207,10 @@ public class EchoServer
 				    		sock = (SSLSocket) serverSocket.accept(); 
 				    		System.out.println("Accepts: " + sock.getRemoteSocketAddress());
 				    		System.out.println("begin dh key exchange SERVER");
-							DHKeyAlice dhka = null;
-//									new DHKeyAlice(sock);
-							AES serverAes = null;
-									//new AES(dhka.getAliceSecret());
+							DHKeyAlice dhka = new DHKeyAlice(sock);//TEST
+							AES serverAes = new AES(dhka.getAliceSecret());//TEST
 							LoginHandler lh = new LoginHandler(sock, serverAes); 
-				    	//	if (!lh.getVerified()) { continue;}
+				    		if (!lh.getVerified()) { continue;}		//TEST
 				    		DHKeyEchoThread2 dhThread = new DHKeyEchoThread2(this, sock, lh.initiator);
 				    		dhThread.start();
 				    		DHClients.add(dhThread);

@@ -60,7 +60,7 @@ public class UserLogin {
 				    	if (choice2.toUpperCase().contains("YES")) {initiator = true;} else {initiator = false;}
 				    	pw.println(choice2);
 				    	pw.flush();
-				    	//verified = returningUser();
+				    	verified = returningUser();
 					} else {
 				    	System.out.println("Usernames/password must not be blank. Please try again");
 
