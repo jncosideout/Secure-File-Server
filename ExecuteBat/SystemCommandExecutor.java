@@ -39,7 +39,8 @@ public class SystemCommandExecutor
   private List<String> commandInformation;
   private ThreadedStreamHandler inputStreamHandler;
   private ThreadedStreamHandler errorStreamHandler;
-  
+  private KeytoolListCertSH KLCStreamHandler = null; //to retrieve fingerprints
+
   private String[] inputVars = null;
  
   private String commonName = null;
@@ -50,8 +51,11 @@ public class SystemCommandExecutor
   private String country = null;
   private boolean runGenKey = false;
   private boolean runCertReq = false;
+  private boolean fingerprints = false;
+  private String fPrints = null;
   
-  /**
+
+/**
    * Pass in the system command you want to run as a List of Strings, as shown here:
    * 
    * List<String> commands = new ArrayList<String>();
@@ -79,7 +83,10 @@ public class SystemCommandExecutor
     		runGenKey = true; break; 
     	} else if (com.contains("certreq")) {
     		runCertReq = true; break;
-    	}
+    	} else if (com.contains("list")) {
+    		fingerprints = true;
+    		break;
+    	} 
     }
    // runCertReq = false; //TESTING PURPOSES
     if (runGenKey) {
@@ -118,16 +125,16 @@ public class SystemCommandExecutor
     {
       ProcessBuilder pb = new ProcessBuilder(commandInformation);
       Map<String, String> env = pb.environment();
-      if (runGenKey || runCertReq) { //shortcut for elevated privileges keytool
+      if (runGenKey || runCertReq || fingerprints) { //shortcut for elevated privileges keytool
           env.put("PATH", "C:\\Users\\Alex\\Desktop\\keytool.exe - Shortcut.lnk"); 
       } else {
         env.put("PATH", "C:\\Program Files\\Java\\jre1.8.0_144\\bin\\keytool.exe"); }
 //      env.remove("OTHERVAR");
 //      env.put("VAR2", env.get("VAR1") + "suffix");
-      File dir = null;
-      if (runGenKey || runCertReq) {
-    	  dir = new File("C:\\Users\\Alex\\Desktop");
-      } else {  dir = new File("C:\\Program Files\\Java\\jre1.8.0_144\\bin"); }
+      File dir = null;//the working directory for the process1
+      if (runGenKey || runCertReq || fingerprints) { //TODO change this
+    	  dir = new File("C:\\Users\\Alex\\Desktop");//directory for NEWclientkeystore TEST file
+      } else {  dir = new File("C:\\Program Files\\Java\\jre1.8.0_144\\bin"); }//directory for main client server keystores
 	  pb.directory(dir);
       Process process = pb.start();
 
@@ -140,7 +147,6 @@ public class SystemCommandExecutor
       // see http://java.sun.com/j2se/1.5.0/docs/guide/misc/threadPrimitiveDeprecation.html
       InputStream inputStream = process.getInputStream();
       InputStream errorStream = process.getErrorStream();
-
       // these need to run as java threads to get the standard output and error from the command.
       // the inputstream handler gets a reference to our stdOutput in case we need to write
       // something to it, such as with the sudo command
@@ -148,21 +154,32 @@ public class SystemCommandExecutor
       if (runGenKey) {
 	      inputStreamHandler = new KeytoolStreamHandler(errorStream, stdOutput, inputVars);
 	      errorStreamHandler = new ThreadedStreamHandler(inputStream); //switch inputStream with errorStream to make keytool -genkey work 
+      } else if (fingerprints) {
+    	  KLCStreamHandler = new KeytoolListCertSH(inputStream);
+	      errorStreamHandler = new ThreadedStreamHandler(errorStream);  
       } else {
 	      inputStreamHandler = new ThreadedStreamHandler(inputStream);
 	      errorStreamHandler = new ThreadedStreamHandler(errorStream); } //switch inputStream with errorStream to make keytool -genkey work 
 
       // TODO the inputStreamHandler has a nasty side-effect of hanging if the given password is wrong; fix it
-      inputStreamHandler.start();
+      if (fingerprints){ KLCStreamHandler.start();
+      } else { inputStreamHandler.start();}
+      
       errorStreamHandler.start();
 
       // TODO a better way to do this?
       exitValue = process.waitFor();
- 
+      
+      if (fingerprints){
+    	  fPrints = KLCStreamHandler.getFingerprints();
+      }
+      
       // TODO a better way to do this?
-      inputStreamHandler.interrupt();
+      if (fingerprints){ KLCStreamHandler.interrupt();
+      } else { inputStreamHandler.interrupt();}
       errorStreamHandler.interrupt();
-      inputStreamHandler.join();
+      if (fingerprints){ KLCStreamHandler.join();
+      } else {inputStreamHandler.join();}
       errorStreamHandler.join();
     }
     catch (IOException e)
@@ -187,7 +204,14 @@ public class SystemCommandExecutor
    */
   public StringBuilder getStandardOutputFromCommand()
   {
+	  
     return inputStreamHandler.getOutputBuffer();
+  }
+  
+  public StringBuilder getListCertOutputFromCommand()
+  {
+	  
+    return KLCStreamHandler.getOutputBuffer();
   }
 
   /**
@@ -198,12 +222,6 @@ public class SystemCommandExecutor
     return errorStreamHandler.getOutputBuffer();
   }
 
+  public String getfPrints() {return fPrints;}
 
-}
-
-
-
-
-
-
-
+}//eoc

@@ -8,22 +8,30 @@ public class ProcessBuilderExample
   
 	// build the system command we want to run
     List<String> commands = new ArrayList<String>();
+    private String fPrints = null;
+
 	
   public static void main(String[] args) throws Exception
   {
-    new ProcessBuilderExample("testAlias1", "testKP1");
+	  ProcessBuilderExample pbe = new ProcessBuilderExample("list", "testAlias1", "testKP1", 
+			  								"NEWclientkeystore.jks", "NEWkeYs4clianTs", "testNEW1.csr");
+    System.out.println("here are fPrints");
+    System.out.println(pbe.getfPrints());
   }
  
-  public ProcessBuilderExample(String newAlias, String newKeyPass) throws IOException, InterruptedException
+  public ProcessBuilderExample(String keytoolCommand, String newAlias, String newKeyPass,
+		  								String keystore, String storePass, String csrFile) throws IOException, InterruptedException
   {
-    setCommands("list", newAlias, newKeyPass, "NEWclientkeystore.jks", "NEWkeYs4clianTs", "testNEW1.csr");
+    setCommands(keytoolCommand, newAlias, newKeyPass, keystore, storePass, csrFile);
    		
     // execute the command
     SystemCommandExecutor commandExecutor = new SystemCommandExecutor(commands);
     int result = commandExecutor.executeCommand();
-
+    fPrints = commandExecutor.getfPrints();//in case keytool list was called for fingerprints
     // get the stdout and stderr from the command that was run
-    StringBuilder stdout = commandExecutor.getStandardOutputFromCommand();
+    StringBuilder stdout = null;
+    if (keytoolCommand.equals("list")){stdout = commandExecutor.getListCertOutputFromCommand();//for fPrints
+    } else { stdout = commandExecutor.getStandardOutputFromCommand();}
     StringBuilder stderr = commandExecutor.getStandardErrorFromCommand();
     
     // print the stdout and stderr
@@ -42,8 +50,6 @@ public class ProcessBuilderExample
 	  switch (useCase) {
 	  case "genkey": 
 		    commands.add("-genkey");  //key generation
-		    commands.add("-alias");
-		    commands.add(myAlias);
 		    commands.add("-keypass");
 		    commands.add(myKeyPass);
 		    commands.add("-validity");  //key generation
@@ -54,8 +60,6 @@ public class ProcessBuilderExample
 		    break;
 	  case "certreq":	  
 		    commands.add("–certreq");        // cert req csr
-		    commands.add("-alias");
-		    commands.add(myAlias);
 		    commands.add("–sigalg");         // cert req csr -keyalg in java 8
 		    commands.add("rsa");             // cert req csr
 		    commands.add("–file");           // cert req csr
@@ -65,11 +69,15 @@ public class ProcessBuilderExample
 		    break;
 	  default:
 	  }
-	  
+	    commands.add("-alias");
+	    commands.add(myAlias);
 	    commands.add("-keystore");
 	    commands.add(myKeystore);
 	    commands.add("-storepass");
 	    commands.add(myStorepass);
 	    commands.add("-v");
   }
+  
+  public String getfPrints() {return fPrints;}
+
 }//end class

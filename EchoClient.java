@@ -53,7 +53,8 @@ public class EchoClient
     private String	storePass;
     private String tsName; //file path of trust store
     private String	trustStorePass;
-	
+	private String alias;
+	private String keypass;
 	/**
      * Main method.
      *
@@ -76,7 +77,7 @@ public class EchoClient
     }
     
     private void startClient(Scanner scan) {
-    	ArrayList<char[]> jksPassWs = assignKeystorePaths();
+    	ArrayList<char[]> jksPassWs = assignKeystorePaths(scan);
     	SSLContext sc = initSSLContext(jksPassWs);
     	SSLSocketFactory factory = sc.getSocketFactory();
     	SSLSocket sock = connect(factory);
@@ -84,15 +85,16 @@ public class EchoClient
     	try {
     		
 			DHKeyAlice dhka = null; //possible DHKeyAlice
-//    		Thread.sleep(200);
-//    		System.out.println("begin dh key exchange CLIENT");
-			DHKeyBob dhkb = new DHKeyBob(sock);					//TEST NULL
-    		AES userAes = new AES(dhkb.getBobSecret());			//TEST NULL
-			UserLogin ul = new UserLogin(sock, scan, userAes);
-    		if (!ul.getVerified()) {								//TEST
-    			System.out.println("Access denied. Exiting program");//TEST
+    		Thread.sleep(200);
+    		System.out.println("begin DH key exchange with server");
+			DHKeyBob dhkb = new DHKeyBob(sock);
+			System.out.println("Communication with server now encrypted");
+    		AES userAes = new AES(dhkb.getBobSecret());			
+			UserLogin ul = new UserLogin(sock, scan, userAes, alias, ksName, storePass, "");
+    		if (!ul.getVerified()) {								
+    			System.out.println("Access denied. Exiting program");
     			System.exit(1);
-    			} else {System.out.println("Access granted."); }//TEST
+    			} else {System.out.println("Access granted."); }
     		if (ul.getInitiator()) {
 	    		System.out.println("Please hold for your correspondent to log in." );
 				dhka = new DHKeyAlice(sock);
@@ -116,7 +118,7 @@ public class EchoClient
 		} 
     }
     
-    private ArrayList<char[]> assignKeystorePaths() {
+    private ArrayList<char[]> assignKeystorePaths(Scanner scan) {
     	
 		//System.out.println("What is the keystore file path?");
 		ksName = "C:\\temp-openssl-32build\\clientKeystore\\clientkeystore.jks"; 			
@@ -135,11 +137,11 @@ public class EchoClient
     	char[] tspass = trustStorePass.toCharArray();  				// password for TrustStore
      				
     	
-//		System.out.println("What is the alias?");
-//		String alias = scan.nextLine();
+		System.out.println("What is the certificate alias?\n");
+		alias = scan.nextLine();
 		
-		//System.out.println("Input key password for %s", alias);
-		String keypass = "client1";
+		System.out.printf("Input key password for %s", alias);
+		keypass = "client1";
     	char[] kpass = keypass.toCharArray();  // password for private key
      	ArrayList<char[]> passwords = new ArrayList<>();
      	passwords.add(spass);

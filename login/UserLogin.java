@@ -5,6 +5,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.net.ssl.*;
 
+import ExecuteBat.ProcessBuilderExample;
 import myClient.AES;
 import rsaEncryptSign.DHCryptoInitiator;
 
@@ -24,10 +25,17 @@ public class UserLogin {
 	private boolean verified = false;
 	private boolean initiator;
 	private AES userAes;
+	private String alias, keyPass, keystore, storePass, csrFile;
+	private String fingerprints = "";
 	
-	public UserLogin(SSLSocket sock, Scanner userInputScanner, AES userAes) throws IOException {
+	public UserLogin(SSLSocket sock, Scanner userInputScanner, AES userAes, String newAlias,
+				String keystore, String storePass, String csrFile) throws IOException {
 		socket = sock;
 		this.userAes = userAes;
+		alias = newAlias;
+		this.keystore = keystore;
+		this.storePass = storePass;
+		this.csrFile = csrFile;
 		
 		pw = new PrintWriter(new OutputStreamWriter(sock.getOutputStream()));
 		
@@ -46,7 +54,7 @@ public class UserLogin {
 				    	givenPassword = userInputScanner.nextLine();
 				    	registerNewUser();
 					} else if (choice.trim().contains("return")) {
-						System.out.println("Welcome back.\n Please enter your username");
+						System.out.println("Welcome back.\nPlease enter your username and press enter");
 						userName = "beatya4";
 						//userInputScanner.nextLine();
 				    	System.out.println("Please type your email and press enter");
@@ -55,6 +63,9 @@ public class UserLogin {
 				    	System.out.println("Please type your password and press enter");
 				    	givenPassword = "apple3456";
 				    			//userInputScanner.nextLine();
+						//We need to ask the user ahead of time to take responsibility for initiating 
+						//Diffie-Hellman with the next client who logs in. For each pair of users 
+						//the first one to log in MUST choose 'YES'
 				    	System.out.println("Please type YES to initiate Diffie-Hellman \n NO to receive request");
 				    	String choice2 = userInputScanner.nextLine();
 				    	if (choice2.toUpperCase().contains("YES")) {initiator = true;} else {initiator = false;}
@@ -112,6 +123,8 @@ public class UserLogin {
 	}
 	
 	protected String createCertificate() {
+		System.out.printf("Input key password for %s", alias);
+		//keypass = "client1";
 		return new String();
 	}
 	
@@ -124,6 +137,10 @@ public class UserLogin {
 			pw.flush();
 			Thread.sleep(100);
 			pw.println(userAes.encrypt(givenPassword));
+			pw.flush();
+			Thread.sleep(100);
+			getFingerprints();
+			pw.println(userAes.encrypt(fingerprints));
 			pw.flush();
 			Thread.sleep(100);
 		} catch (InterruptedException e) {
@@ -139,6 +156,7 @@ public class UserLogin {
 			
 	}
 	
+	//true if access granted
 	protected boolean receiveValidation() throws IOException {
 		boolean access = false;
 		
@@ -150,6 +168,20 @@ public class UserLogin {
 			else if (reply.equals("granted")) {access = true;}
 		}
 		return access;
+	}
+	
+	
+	private String getFingerprints() {
+	    
+		try {
+	    	ProcessBuilderExample pbe = new ProcessBuilderExample("list", alias, "", keystore, storePass, "");
+	    	fingerprints = pbe.getfPrints();
+		} catch (IOException | InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return fingerprints;
 	}
 	
 	public String getUserName(){ return userName;}

@@ -2,9 +2,15 @@ package myClient;
 
 import java.io.*;
 import java.net.Socket;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.LinkedList;
 import java.util.Scanner;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
@@ -12,11 +18,13 @@ public class ServerThread implements Runnable {
 
 		private SSLSocket socket;
 		private String userName;
+		private AES userAes;
 		
-		public ServerThread(SSLSocket socket, String userName) {
+		public ServerThread(SSLSocket socket, String userName, AES userAes) {
 			super();
 			this.socket = socket;
 			this.userName = userName;
+			this.userAes = userAes;
 		}
 		
 		
@@ -43,14 +51,15 @@ public class ServerThread implements Runnable {
 				
 				while(!socket.isClosed()) {
 						if (serverIn.hasNextLine()) {
-							System.out.println(serverIn.nextLine());
+							System.out.println(userAes.decrypt(serverIn.nextLine()));
 						}
 				}//end while
 				
 				serverIn.close();
 				System.out.println("after ServerThread serverIn.close");
 				
-			} catch (IOException io) {
+			} catch (IOException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException |
+					NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException io) {
 				System.err.println(io.getMessage());
 			}
 		}//end run

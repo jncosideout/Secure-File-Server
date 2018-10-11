@@ -97,22 +97,23 @@ public class MyJDBChandler {
 		    }
 		  }
 	
-	  //output[0] = id; [1] = salt; [2] = hash; [3] = iterations; [4] = hash_algo;
+	  //output[0] = id; [1] = salt; [2] = hash; [3] = fingerprints [4] = iterations; [5] = hash_algo;
 	  public String[] searchTable(Connection con, String tableName, String userName, String email, 
-			  boolean wantSaltHash, boolean wantIterAlgo) throws SQLException {
+			  						boolean wantSaltHash, boolean wantIterAlgo) throws SQLException {
 		 Statement stmt = null;
 		 String query = null;
 		 String salt = null;
 		 String hash = null;
 		 String id = null;
+		 String fgrpts = null;
 		 int iterations = 0;
 		 String hash_algo = null;
 		 
 		 if (wantSaltHash && wantIterAlgo){
-			 query = "SELECT id, salt, hash, iterations, hash_algorithm FROM " + dbName + "." + tableName + 
+			 query = "SELECT id, salt, hash, iterations, hash_algorithm, SHA256_fingerprints FROM " + dbName + "." + tableName + 
 					  " WHERE user_name = \'" + userName  + "\'" + " AND email = \'" + email + "\'";		 }
 		 else if (wantSaltHash) {
-			 	query = "SELECT id, salt, hash FROM " + dbName + "." + tableName + 
+			 	query = "SELECT id, salt, hash, SHA256_fingerprints FROM " + dbName + "." + tableName + 
 				  " WHERE user_name = \'" + userName  + "\'" + " AND email = \'" + email + "\'";
 			 } 
 		 
@@ -133,6 +134,7 @@ public class MyJDBChandler {
 				   if (wantSaltHash) {
 					 salt = rs.getString("salt");
 					 hash = rs.getString("hash");
+					 fgrpts = rs.getString("SHA256_fingerprints");
 				 } if (wantIterAlgo) {
 					 iterations = rs.getInt("iterations");
 					 hash_algo = rs.getString("hash_algorithm");
@@ -144,32 +146,38 @@ public class MyJDBChandler {
 			 if (stmt != null) {  stmt.close(); }
 		 }
 		 
-		 String[] output = new String[5];
+		 String[] output = new String[6];
 		 output[0] = id;
 		 
 		   if (wantSaltHash) {
 			 output[1] = salt;
 			 output[2] = hash;
+			 output[3] = fgrpts;
 		 } if (wantIterAlgo) {
-			 output[3] = Integer.toString(iterations);
-			 output[4] = hash_algo;		
+			 output[4] = Integer.toString(iterations);
+			 output[5] = hash_algo;		
 		 } 
 		 
 		  return output;
 	  }
 	  
-	  public void updateRow(Connection con, String tableName, String userName, int id, String saltVal, String hashVal) throws SQLException {
+	  public void updateRow(Connection con, String tableName, String userName, String email, 
+			  					int id, String saltVal, String hashVal) throws SQLException {
 		  
 		  PreparedStatement update = null;
 		  
-		  String updateString = "UPDATE " + dbName + "." + tableName + " SET salt = ?, hash = ?" + 
-				  " WHERE id = " + id + " AND user_name = \'" + userName + "\'";
+		  String updateString = "UPDATE " + dbName + "." + tableName + " SET ";
+		  if (hashVal != null && saltVal != null) { updateString += "salt = ?, hash = ?";}
+		  if (userName != null && email != null) { updateString += ", user_name = ?, email = ?";}
+		  updateString +=  " WHERE id = " + Integer.toString(id);
 		  
 		  try {
 			  con.setAutoCommit(false);
 			  update = con.prepareStatement(updateString);
 			  update.setString(1, saltVal);
 			  update.setString(2, hashVal);
+			  update.setString(3, userName);
+			  update.setString(4, email);
 			  update.executeUpdate();
 			  con.commit();
 		  } catch (SQLException sql) {
