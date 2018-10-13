@@ -20,11 +20,14 @@ public class AES
 {
 	private static final String ALGORITHM = "AES/CBC/PKCS5Padding";
 	private static final String CODIFICATION = "UTF-8";
-	byte[] sharedSecret;
+	private byte[] sharedSecret;
 	public Cipher cipher;
+	private SecretKeySpec skeySpec;
 	
 	public AES(byte[] sharedSecret) {
 		this.sharedSecret = sharedSecret;
+		skeySpec = new SecretKeySpec(sharedSecret, 0, 16, "AES");  //SecretKeySpec used to construct a SecretKey from raw byte array
+
 	}
 	
 	//Encrypt Function
@@ -32,7 +35,6 @@ public class AES
 	 
 
 	   // byte[] raw = DatatypeConverter.parseHexBinary(key);          //Converts the string key into an array of bytes
-	 SecretKeySpec skeySpec = new SecretKeySpec(sharedSecret, 0, 16, "AES");  //SecretKeySpec used to construct a SecretKey from raw byte array
 	        
 	 Cipher cipher = Cipher.getInstance(ALGORITHM);         //getting encryption algorithm
 	                                    
@@ -62,7 +64,6 @@ public class AES
 	    
 	// byte[] raw = DatatypeConverter.parseHexBinary(key); //Converts the string key into an array of bytes
 	        
-	 SecretKeySpec skeySpec = new SecretKeySpec(sharedSecret, 0, 16, "AES"); //constructs secret key
 	 Cipher cipher = Cipher.getInstance(ALGORITHM);  
 	        
 	 byte[] iv = Arrays.copyOfRange(encryptedData, 0, 16); //copies the ecryptedData array into iv array 
@@ -79,6 +80,13 @@ public class AES
 	        
 	 return plainText;  //return plaintext
 	 }
+
+	public SecretKeySpec getSkeySpec() {
+		return skeySpec;
 	}
+	
+	
+	
+}//eoc
 	  
 
