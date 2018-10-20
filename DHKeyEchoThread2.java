@@ -80,6 +80,14 @@ public class DHKeyEchoThread2 extends Thread{
 					break;
 			}
 		}
+		synchronized (lock) {
+			try {
+				lock.wait();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	}
 	
 	private void bob(){
@@ -105,6 +113,7 @@ public class DHKeyEchoThread2 extends Thread{
 					break;
 			}
 		}
+        synchronized (lock) {lock.notify();}
 	}
 	
 	

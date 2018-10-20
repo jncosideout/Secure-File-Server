@@ -41,35 +41,57 @@ class VerSig {
     public static void main(String[] args) {
 
         /* Verify a DSA signature */
-
-        try{ 
-        	int port = 9999;
-            
-            ServerSocket s;
-            s = new ServerSocket(port);
-            Socket c = s.accept();
+    	int port = 9999;
+    	
+        try(ServerSocket s = new ServerSocket(port)){ 
+        	System.out.println("waiting for client");
+        	Socket c = s.accept();
             System.out.println("accepted conn");
             OutputStream out = c.getOutputStream();
-            BufferedInputStream bufIn = new BufferedInputStream(c.getInputStream());
+            DataInputStream din = new DataInputStream(c.getInputStream());
         	
-
-            /* import encoded public key */
-
-            byte[] encKey = new byte[1024];  
-            bufIn.read(encKey);
-            bufIn.close();
+            //import raw data
+            int dataLen = din.readInt();
+            byte[] rawData = new byte[dataLen];
+            din.readFully(rawData);
             
-            X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(encKey);
+            /* import the signature bytes */
+            int siglen = din.readInt();
+            byte[] sigToVerify = new byte[siglen]; 
+            din.readFully(sigToVerify );
+            
+            /* import encoded public cert */
+            int certLen = din.readInt();
+            byte[] encodedCert = new byte[certLen];  
+            //din.readFully(encodedCert);
+            
+            java.security.cert.CertificateFactory cf =
+            		java.security.cert.CertificateFactory.getInstance("X.509");
+			java.security.cert.Certificate cert =  cf.generateCertificate(din);
+			PublicKey pub = cert.getPublicKey();
+			
+            System.out.println("pubKey.toString \n" + pub.toString());
+            
+            /* create a Signature object and initialize it with the public key */
+            Signature sig = Signature.getInstance("SHA1withRSA");
+            sig.initVerify(pub);
 
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            PublicKey pubKey = keyFactory.generatePublic(pubKeySpec);
-            System.out.println("pubKey.toString \n" + pubKey.toString());
+            /* Update and verify the data */
+            sig.update(rawData);
+
+            din.close();
+
+
+            boolean verifies = sig.verify(sigToVerify);
+
+            System.out.println("signature verifies: " + verifies);
+
            
             
         } catch (Exception e) {
             System.err.println("Caught exception " + e.toString());
-        }
-
+            e.printStackTrace();
+        } 
     }
 
 }

@@ -23,6 +23,7 @@ import rsaEncryptSign.DHKeyAlice;
 import rsaEncryptSign.DHKeyBob;
 
 import java.io.Console;				//used for system.console.readPassword() which isn't working
+import java.io.DataOutputStream;
 import java.io.ObjectInputStream;   // Used to read objects sent from the server
 import java.io.ObjectOutputStream;  // Used to write objects to the server
 import java.io.PrintWriter;
@@ -138,7 +139,8 @@ public class EchoClient
      				
     	
 		System.out.println("What is the certificate alias?\n");
-		alias = scan.nextLine();
+		alias = "client";
+				//scan.nextLine();
 		
 		System.out.printf("Input key password for %s", alias);
 		keypass = "client1";
@@ -189,20 +191,8 @@ public class EchoClient
 		} catch (KeyStoreException e2) {
 			System.err.println(e2.getMessage());
 			e2.printStackTrace();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			System.err.println(e.getMessage());
-			e.printStackTrace();
-		} catch (CertificateException e) {
-			System.err.println(e.getMessage());
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (UnrecoverableKeyException e) {
-			System.err.println(e.getMessage());
-			e.printStackTrace();
-		} catch (KeyManagementException e) {
+		} catch (CertificateException | IOException 
+					| UnrecoverableKeyException |KeyManagementException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -219,7 +209,7 @@ public class EchoClient
 //			sock.setEnabledCipherSuites(suites);
 			
     	    Thread.sleep(1000);
-    	    System.out.println("Connected to " + host + " on port " + EchoServer.SERVER_PORT);
+    	    System.out.println("\nConnected to " + host + " on port " + EchoServer.SERVER_PORT);
     	    
 	    } catch(Exception e) {
 			System.err.println("Error: " + e.getMessage());
@@ -235,10 +225,11 @@ public class EchoClient
 	    Thread serverAccessThread = new Thread(serverThread);
 	    serverAccessThread.start();
 	    
-        PrintWriter serverOut = new PrintWriter(sock.getOutputStream(), false);
-
+	    ObjectOutputStream oos = new ObjectOutputStream(sock.getOutputStream());
+	    
 	    while (serverAccessThread.isAlive())
 	    {
+	    	Message clientMsg = null;
 	    	if (scan.hasNextLine() ) {
 	    		if (scan.hasNext("goodbye")) {
 	    			sock.close();
@@ -247,16 +238,12 @@ public class EchoClient
 	    		}
 	    		else {
 					String nextSend = userName + " > " + scan.nextLine();
-					serverOut.println(userAes.encrypt(nextSend));
-					serverOut.flush();
+					String ciphertext = userAes.encrypt(nextSend);
+					byte[] cipherhash = Message.computeHash(ciphertext, userAes);
+					clientMsg = new Message(ciphertext, cipherhash);
+					oos.writeObject(clientMsg);
+					oos.flush();
 				
-					/*make sure 
-					 * there were 
-					 * no surprises
-					 */
-					if  (serverOut.checkError()) {
-						System.err.println("ServerThread: java.io.PrintWriter error");
-					}
 				}
 	    	}//end if
 	    }//end while

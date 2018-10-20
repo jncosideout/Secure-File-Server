@@ -1,9 +1,6 @@
 package myClient;
 
 
-import java.net.ServerSocket;  // The server uses this to bind to a port
-import java.net.Socket;        // Incoming connections are represented as sockets
-import java.security.AlgorithmConstraints;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -23,9 +20,9 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
-import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocket;// The server uses this to bind to a port
 import javax.net.ssl.SSLServerSocketFactory;
-import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocket;// Incoming connections are represented as sockets
 import javax.net.ssl.TrustManagerFactory;
 
 import java.util.ArrayList;
@@ -85,7 +82,7 @@ public class EchoServer
     	clients = new ArrayList<EchoThread>();
     	DHClients = new ArrayList<DHKeyEchoThread2>();
 
-    		
+    	//create a new ServerSocket using SSL/TLS SecureContext	
     	SSLServerSocketFactory sslServSockFact = sc.getServerSocketFactory();
 		SSLServerSocket serverSock = null;
 		try {
@@ -101,6 +98,8 @@ public class EchoServer
 	            	
     }
 	
+    //sets up the file paths and passwords for the keystore, trust store 
+    //and alias associated with the certificate of this server
     private ArrayList<char[]> assignKeystorePaths() {
 		//System.out.println("What is the keystore file path?");
 		ksName = "C:\\temp-openssl-32build\\serverKeystore\\serverkeystore"; 			
@@ -139,6 +138,8 @@ public class EchoServer
 		clients.remove(et);
 	}
     
+	//Creates an SSLContext that holds the keystore and trust store for the server
+	//and specifies the version of the SSL protocol to use
     public SSLContext initSSLContext(ArrayList<char[]> jksPassWs) {
     	SSLContext sc = null;
     	try{
@@ -195,6 +196,7 @@ public class EchoServer
     	return sc;
     }
 	
+    //starts a loop to accept and handle clients
     private void acceptClients(SSLServerSocket serverSocket) throws InterruptedException {
     	// A simple infinite loop to accept connections
 	    SSLSocket sock = null;
@@ -206,11 +208,17 @@ public class EchoServer
 				    		// Accept an incoming connection from CLIENT
 				    		sock = (SSLSocket) serverSocket.accept(); 
 				    		System.out.println("Accepts: " + sock.getRemoteSocketAddress());
-				    		System.out.println("begin dh key exchange SERVER");
-							DHKeyAlice dhka = new DHKeyAlice(sock);//TEST
-							AES serverAes = new AES(dhka.getAliceSecret());//TEST
+				    		System.out.println("begin dh key exchange with client");
+				    		//The server acts as "Alice" because it is initiating
+				    		//the first Diffie-Hellman key to encrypt login data
+							DHKeyAlice dhka = new DHKeyAlice(sock);
+							System.out.println("Communication with client now encrypted");
+							//creates a class with a new AES key and access
+							//to encryption and decryption functions
+							AES serverAes = new AES(dhka.getAliceSecret());
+							//Establishes a connection to the Database
 							LoginHandler lh = new LoginHandler(sock, serverAes); 
-				    		if (!lh.getVerified()) { continue;}		//TEST
+				    		if (!lh.getVerified()) { continue;}	
 				    		DHKeyEchoThread2 dhThread = new DHKeyEchoThread2(this, sock, lh.initiator);
 				    		dhThread.start();
 				    		DHClients.add(dhThread);

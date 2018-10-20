@@ -47,19 +47,24 @@ public class ServerThread implements Runnable {
 				
 				//this thread is now INPUT only
 				InputStream serverInStream = socket.getInputStream();
-				Scanner serverIn = new Scanner(serverInStream);
-				
+	        	final ObjectInputStream objInput = new ObjectInputStream(serverInStream);
+	        	Message response = null;
+	        	
 				while(!socket.isClosed()) {
-						if (serverIn.hasNextLine()) {
-							System.out.println(userAes.decrypt(serverIn.nextLine()));
-						}
+                	response = (Message)objInput.readObject();
+                	
+                	if (!response.compareHash(response.theMessage, userAes)){
+                		System.out.println("message was tampered with in transit!");
+                	}
+                	System.out.println(userAes.decrypt(response.theMessage));
+						
 				}//end while
 				
-				serverIn.close();
+				objInput.close();
 				System.out.println("after ServerThread serverIn.close");
 				
 			} catch (IOException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException |
-					NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException io) {
+					NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException | ClassNotFoundException io) {
 				System.err.println(io.getMessage());
 			}
 		}//end run

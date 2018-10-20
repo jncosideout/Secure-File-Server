@@ -32,10 +32,24 @@ package rsaEncryptSign;
 
 import java.io.*;
 import java.security.*;
+import java.security.cert.CertificateException;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+
 import java.net.*;
 
 class GenSig {
-
+	private static String ksName; //file path of keystore
+    private static String	storePass;
+	private static String alias;
+	private static String keypass;
+	private static PrivateKey priv;
+	private static java.security.cert.Certificate cert;
+	
     public static void main(String[] args) {
 
         /* Generate a DSA signature */
@@ -44,38 +58,100 @@ class GenSig {
     	int port = 9999;
         String host = "localhost";
         
-        try {
-            Socket s = new Socket(host, port);
-        
-            BufferedOutputStream bufOut = new BufferedOutputStream(s.getOutputStream());
+        try (Socket s = new Socket(host, port)){
+            DataOutputStream dos = new DataOutputStream(s.getOutputStream());
             InputStream in = s.getInputStream();
         
             
-            /* Generate a key pair */
+            /* retrieve a key pair */
+            initKeystore(assignKeystorePaths());
 
-            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-            //SHOULD USE STRONGER PRNG??
-            SecureRandom random = SecureRandom.getInstance("SHA1PRNG", "SUN"); 
+            /* Create a Signature object and initialize it with the private key */
 
-            keyGen.initialize(1024, random);
+            Signature dsa = Signature.getInstance("SHA1withRSA"); 
+            dsa.initSign(priv);
 
-            KeyPair pair = keyGen.generateKeyPair();
-            //PrivateKey priv = pair.getPrivate();
-            PublicKey pub = pair.getPublic();
-
-            /* Save the public key in a file */
-            byte[] key = pub.getEncoded();
+            /* Update and sign the data */
+            byte[] buffer = "qwertyuiop1234567890-=][poiuytrewasdfghjklmnbvcxz".getBytes("UTF-8");
+            dsa.update(buffer, 0, buffer.length);
             
-            bufOut.write(key);
+            //Send raw data to peer
+            int dataLen = buffer.length;
+            dos.writeInt(dataLen);
+            dos.write(buffer);
+            
+            /* Now that all the data to be signed has been read in, 
+                    generate a signature for it */
 
-            bufOut.close();
+            byte[] realSig = dsa.sign();
+            int sigLen = realSig.length;
+            dos.writeInt(sigLen);
+            /* Send the signature to peer */
+            dos.write(realSig);
+            
+            /* Send the public key to peer */
+    		byte[] encodedCert = cert.getEncoded();
+            int certLen = encodedCert.length;
+            //int certLen = encodedCert.length;
+            dos.writeInt(certLen);
+            dos.write(encodedCert);
+
+            dos.close();
 
         } catch (Exception e) {
             System.err.println("Caught exception " + e.toString());
+            e.printStackTrace();
         }
 
     };
 
+ private static ArrayList<char[]> assignKeystorePaths() {
+    	
+		 //file path of keystore
+		ksName = "C:\\temp-openssl-32build\\serverKeystore\\NEWclientkeystore.jks"; 			
+
+		String	storePass = "NEWkeYs4clianTs";
+		char[] spass = storePass.toCharArray();  				// password for keystore
+ 	
+		System.out.printf("Input key password for %s ?\n", alias);
+		String keypass = "rsakeypass";
+		char[] kpass = keypass.toCharArray();  // password for private key
+ 	
+    	
+    	System.out.println("What is the certificate alias?\n");
+		alias = "newRSAkey";				
+				//scan.nextLine();
+		
+     	ArrayList<char[]> passwords = new ArrayList<>();
+     	passwords.add(spass);
+     	passwords.add(kpass);
+     	
+ 		return passwords;  
+     }
+
+private static void initKeystore(ArrayList<char[]> jksPassWs) {
+	try {		
+		//initialize KeyStore
+		KeyStore ks = KeyStore.getInstance("JKS");
+		FileInputStream ksfis = new FileInputStream(ksName);
+		BufferedInputStream ksbufin = new BufferedInputStream(ksfis);
+		
+		ks.load(ksbufin, jksPassWs.get(0));//element 0 is store pass
+		ksfis.close();
+		priv = (PrivateKey) ks.getKey(alias, jksPassWs.get(1)); //element 1 is keypass
+		cert = ks.getCertificate(alias);
+	} catch (NoSuchAlgorithmException e1) {
+		// TODO Auto-generated catch block
+		System.err.println(e1.getMessage());
+		e1.printStackTrace();
+	} catch (KeyStoreException e2) {
+		System.err.println(e2.getMessage());
+		e2.printStackTrace();
+	} catch (CertificateException | IOException | UnrecoverableKeyException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
 }
+}//eoc
 
 

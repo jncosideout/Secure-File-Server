@@ -67,12 +67,6 @@ public class DHKeyBob {
 			PublicKey alicePubKey = createAlicePubKey(alicePubKeyEnc);
 			// send bobPubKeyEnc
 			byte[] bobPubKeyEnc = bobPubKey(alicePubKey);
-			// DEMO PURPOSES
-			System.out.println("bob encoded pub key");
-	        for (byte b : bobPubKeyEnc) {
-	        	System.out.print(b);
-	        }
-	        System.out.print("\n");
 	        int bPKElen = bobPubKeyEnc.length;
 			dOut.writeInt(bPKElen);
 			Thread.sleep(200);

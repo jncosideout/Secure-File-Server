@@ -24,34 +24,34 @@ public class Message implements java.io.Serializable
 	/** The text string encoded in this Message object */
     public String theMessage;
     private byte[] originalHash;
-    private byte[] encData;
-    private SecretKeySpec key;
+    private byte[] dhData;
+    
     /**
      * Constructor.
      *
      * @param _msg The string to be encoded in this Message object
      *  use only after session key has been created.
      */
-    public Message(String _msg, AES aes){
+    public Message(String _msg, byte[] hash){
 	theMessage = _msg;
-	originalHash = computeHash();
-	key = aes.getSkeySpec();
+	originalHash = hash;
     }
     
     //for verifying DSA signed data during DH key exchange
     public Message(byte[] data){
-    	encData = data;
+    	dhData = data;
 //TODO sign data with sig obj and priv key
     	}
     
     //for encrypted string messages 
     //use only after session key has been created.
-    private byte[] computeHash() {
+    public static byte[] computeHash(String aMessage, AES aes) {
+        SecretKeySpec key = aes.getSkeySpec();
     	byte[] newHash = null;
     	try {
 			Mac mac = Mac.getInstance("HmacSHA256");
 			mac.init(key);
-			newHash = mac.doFinal(theMessage.getBytes("UTF-8"));
+			newHash = mac.doFinal(aMessage.getBytes("UTF-8"));
 		} catch (NoSuchAlgorithmException | UnsupportedEncodingException | InvalidKeyException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -66,8 +66,8 @@ public class Message implements java.io.Serializable
     }
     
     
-    public boolean compareHash() {
-    	byte[] newHash = computeHash();
+    public boolean compareHash(String toCompare, AES aes) {
+    	byte[] newHash = computeHash(toCompare, aes);
     	
 		int diff = originalHash.length ^ newHash.length;
 		for (int i = 0; i < originalHash.length && i < newHash.length; i++) {
