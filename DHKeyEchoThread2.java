@@ -27,42 +27,62 @@ public class DHKeyEchoThread2 extends Thread{
 			e.printStackTrace();
 		}
 	}
-	
-	private DataOutputStream getDos() {return dos;}
-	
+		
 	public void run() {
 		if (isSender) {
-			synchronized (lock) {
-				try {
-					lock.wait();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				alice();
-			}
+			alice();			
 		} else {
 			bob();
 		}
-
+		//to signal finished to our connected client
+		try {
+			dos.writeInt(0);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		EchoThread client = new EchoThread(server, socket);
 		client.start();                 // Fork the thread
 		server.getClients().add(client);
+
 	}
 		
 	private void alice(){
-		
+		synchronized (lock) {
+			try {
+				lock.wait();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 		for (DHKeyEchoThread2 bob : server.getDHClients()) {
 			if (!bob.equals(this)){
 				try {
-					// TODO Alice encodes her public key, and sends it over to Bob.
+					//need to kickstart synchronized handshake
+					int hs = dis.readInt();
+					bob.dos.writeInt(hs);
+					
+					//Alice sends her certificate for signature verification
+					int certLen = dis.readInt();
+					byte[] encodedCert = new byte[certLen];//in this case cert is read in without length
+					dis.readFully(encodedCert);
+					bob.dos.write(encodedCert);
+					bob.dos.flush();
+					
+					//  Alice encodes her DH public key, and sends it over to Bob.
 						int aPKElen = dis.readInt();
 						bob.dos.writeInt(aPKElen);
 						byte[] alicePubKeyEnc = new byte[aPKElen];
 						dis.readFully(alicePubKeyEnc);
 						bob.dos.write(alicePubKeyEnc);
 						bob.dos.flush();
-						// TODO receive bobPubKeyEnc
+						int sigLen = dis.readInt();
+						bob.dos.writeInt(sigLen);
+						byte[] signature = new byte[sigLen];
+						dis.readFully(signature);
+						bob.dos.write(signature);
+						// Alice received bobPubKeyEnc
 						// received int bPKElen
 						//received byte[] bobPubKeyEnc 
 						// created shared secret
@@ -94,17 +114,33 @@ public class DHKeyEchoThread2 extends Thread{
 		for (DHKeyEchoThread2 alice : server.getDHClients()) {
 			if (!alice.equals(this)){
 				try {
-				        int bPKElen;
+				        
 				        synchronized (lock) {lock.notify();}
+						//need to kickstart synchronized handshake
+
+						//Bob sends his certificate for signature verification
+						int certLen = dis.readInt();
+						byte[] encodedCert = new byte[certLen];//in this case cert is read in without length
+						dis.readFully(encodedCert);
+						alice.dos.write(encodedCert);
+						alice.dos.flush();
+						
 				        // received alicePubKeyEnc
 						// created alicePubKey
-				        // send bobPubKeyEnc
+
+				        // sending bobPubKeyEnc DH parameters
+				        int bPKElen;
 				        bPKElen = dis.readInt();
 						alice.dos.writeInt(bPKElen);
 						byte [] bobPubKeyEnc = new byte[bPKElen];
 						dis.readFully(bobPubKeyEnc);
 						alice.dos.write(bobPubKeyEnc);
 						alice.dos.flush();
+						int sigLen = dis.readInt();
+						alice.dos.writeInt(sigLen);
+						byte[] signature = new byte[sigLen];
+						dis.readFully(signature);
+						alice.dos.write(signature);
 						// received aliceLen
 						// created bobSharedSecret
 					} catch (Exception e) {

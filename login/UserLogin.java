@@ -52,17 +52,28 @@ public class UserLogin {
 				    	email = userInputScanner.nextLine();
 				    	System.out.println("Please type a strong password and press enter");
 				    	givenPassword = userInputScanner.nextLine();
-				    	registerNewUser();
+						System.out.printf("Input new alias for %s new certificate", userName);
+						alias = "ClientC";
+						System.out.printf("Input new key password for %s new certificate", alias);
+						keyPass = alias + "pass";
+				    	registerNewUser(userInputScanner);
+				    	verified = false;
 					} else if (choice.trim().contains("return")) {
 						System.out.println("Welcome back.\nPlease enter your username and press enter");
-						userName = "beatya4";
+						userName = alias;
 						//userInputScanner.nextLine();
 				    	System.out.println("Please type your email and press enter");
-						email = "asbeaty@uh.edu";
+						email = alias + "@email.com";
 						//userInputScanner.nextLine();
 				    	System.out.println("Please type your password and press enter");
-				    	givenPassword = "apple3456";
+				    	//TODO HARD CODED LOGIN FOR TESTING PURPOSES ONLY 
+				    	if (alias.equals("newClientA")) {
+				    		givenPassword = "newClientA-3456password";
+				    	} else {
+				    	givenPassword = "newClientB-65478password";
+				    	}
 				    			//userInputScanner.nextLine();
+				    	
 						//We need to ask the user ahead of time to take responsibility for initiating 
 						//Diffie-Hellman with the next client who logs in. For each pair of users 
 						//the first one to log in MUST choose 'YES'
@@ -83,18 +94,23 @@ public class UserLogin {
 	 	}
 	}
 	
-	protected void registerNewUser() {
+	protected void registerNewUser(Scanner userInput) {
 		SaltHashPassW hashP = new SaltHashPassW(givenPassword, 40000); 
 		try {
 			String [] itSaHa = hashP.createNewHash();
 			this.givenPassword = itSaHa[2];
-					
+			createCertificate(userInput);
 			pw.write("NEW_USER");
+			pw.flush();		
+			pw.write(userAes.encrypt(itSaHa[1]));//send salt
 			pw.flush();
-			
 			sendCredentials();
-		} catch (IOException e) {
-			System.err.println(e.getMessage());
+			
+		} catch (IOException |InvalidKeyException |NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NoSuchPaddingException | IllegalBlockSizeException |BadPaddingException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -122,10 +138,15 @@ public class UserLogin {
 		return granted;
 	}
 	
-	protected String createCertificate() {
-		System.out.printf("Input key password for %s", alias);
-		//keypass = "client1";
-		return new String();
+	protected void createCertificate(Scanner userInput) {
+		keystore = alias + "Keystore.jks";
+		storePass = alias + "StorePass";
+		try {																//
+			ProcessBuilderExample pbe = new ProcessBuilderExample("genkey", alias, keyPass, keystore, storePass, null, userInput);
+		} catch (IOException | InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	protected void sendCredentials() throws IOException {
@@ -171,17 +192,15 @@ public class UserLogin {
 	}
 	
 	
-	private String getFingerprints() {
+	private void getFingerprints() {
 	    
-		try {
-	    	ProcessBuilderExample pbe = new ProcessBuilderExample("list", alias, "", keystore, storePass, "");
+		try {								//non-applicable args			//keypass                  csr filename
+	    	ProcessBuilderExample pbe = new ProcessBuilderExample("list", alias, "", keystore, storePass, "", null);
 	    	fingerprints = pbe.getfPrints();
 		} catch (IOException | InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-		return fingerprints;
 	}
 	
 	public String getUserName(){ return userName;}

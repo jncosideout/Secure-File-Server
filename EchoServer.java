@@ -5,6 +5,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
@@ -40,6 +41,7 @@ public class EchoServer
     /** The server will listen on this port for client connections */
     public static final int SERVER_PORT = 7756;
     private int serverPort;
+    String alias;
     
     List<EchoThread> clients;
     private List<DHKeyEchoThread2> DHClients;
@@ -52,7 +54,8 @@ public class EchoServer
 	private String tsName; //file path of trust store
 	private String	trustStorePass;// password for TrustStore
 	private String keypass;// password for private key
-   
+	private java.security.cert.Certificate serverCert;
+	private PrivateKey serverPrivKey;
     /**
      * Main routine.  Just a dumb loop that keeps accepting new
      * client connections.
@@ -100,28 +103,34 @@ public class EchoServer
 	
     //sets up the file paths and passwords for the keystore, trust store 
     //and alias associated with the certificate of this server
+    /*produces:
+     * ArrayList<char[]> passwords: 
+     * '0' = Key Store Pass
+     * '1' = Trust Store Pass
+     * '2' = alias pass
+     */
     private ArrayList<char[]> assignKeystorePaths() {
 		//System.out.println("What is the keystore file path?");
-		ksName = "C:\\temp-openssl-32build\\serverKeystore\\serverkeystore"; 			
+		ksName = "C:\\temp-openssl-32build\\clientKeystore\\newServerKeystore.jks"; 			
 		//scan.nextLine();
 
 		//System.out.println("Input keystore password");
-		storePass = "serVerstoRepasS";
+		storePass = "newServerStorePass";
     	char[] spass = storePass.toCharArray();  				
     	
     	//System.out.println("What is the trust store file path?");
-		tsName = "C:\\temp-openssl-32build\\serverkeystore\\serverTrustStore"; 			
+		tsName = "C:\\temp-openssl-32build\\clientKeystore\\newServerTrustStore"; 			
 		//scan.nextLine();
 
 		//System.out.println("Input keystore password");
-		trustStorePass = "serVertrUst";
+		trustStorePass = "newServerTrustPass";
     	char[] tspass = trustStorePass.toCharArray();  				
      		
-//		System.out.println("What is the alias?");
-//		String alias = scan.nextLine();
+		alias = "server2";
+				//scan.nextLine();
 		
 		//System.out.println("Input key password for %s", alias);
-		keypass = "serVerkeYpasS";
+		keypass = "server2keypass";
     	char[] kpass = keypass.toCharArray();
     	ArrayList<char[]> passwords = new ArrayList<>();
     	passwords.add(spass);
@@ -159,6 +168,9 @@ public class EchoServer
 				BufferedInputStream tsbufin = new BufferedInputStream(tsfis);
 				ts.load(tsbufin, jksPassWs.get(1));
 				tsfis.close();
+				//get client certificate and private key 
+				serverCert = ks.getCertificate(alias);
+				serverPrivKey = (PrivateKey) ks.getKey(alias, jksPassWs.get(2));				
 				//init factories
 				KeyManagerFactory kmf = KeyManagerFactory.getInstance("Sunx509");
 				kmf.init(ks, jksPassWs.get(2));
@@ -211,7 +223,7 @@ public class EchoServer
 				    		System.out.println("begin dh key exchange with client");
 				    		//The server acts as "Alice" because it is initiating
 				    		//the first Diffie-Hellman key to encrypt login data
-							DHKeyAlice dhka = new DHKeyAlice(sock);
+							DHKeyAlice dhka = new DHKeyAlice(sock, serverCert, serverPrivKey, false);
 							System.out.println("Communication with client now encrypted");
 							//creates a class with a new AES key and access
 							//to encryption and decryption functions

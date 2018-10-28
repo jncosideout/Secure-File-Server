@@ -1,12 +1,11 @@
 package myClient;
 
-import java.net.Socket;             // Used to connect to the server
-
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.cert.Certificate;
+import java.security.PrivateKey;
 import java.security.InvalidKeyException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -22,17 +21,11 @@ import rsaEncryptSign.DHCryptoInitiator;
 import rsaEncryptSign.DHKeyAlice;
 import rsaEncryptSign.DHKeyBob;
 
-import java.io.Console;				//used for system.console.readPassword() which isn't working
 import java.io.DataOutputStream;
-import java.io.ObjectInputStream;   // Used to read objects sent from the server
 import java.io.ObjectOutputStream;  // Used to write objects to the server
-import java.io.PrintWriter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;      // Needed to read from the console
-import java.io.InputStreamReader;   // Needed to read from the console
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -47,7 +40,6 @@ public class EchoClient
 {
 	public static final String host = "localhost";
 	
-	private String userName;
 	private String serverHost;
 	private int serverPort;
 	private String ksName; //file path of keystore
@@ -56,6 +48,8 @@ public class EchoClient
     private String	trustStorePass;
 	private String alias;
 	private String keypass;
+	private java.security.cert.Certificate myCert;
+	private PrivateKey myPrivKey;
 	/**
      * Main method.
      *
@@ -84,11 +78,10 @@ public class EchoClient
     	SSLSocket sock = connect(factory);
     	
     	try {
-    		
 			DHKeyAlice dhka = null; //possible DHKeyAlice
     		Thread.sleep(200);
     		System.out.println("begin DH key exchange with server");
-			DHKeyBob dhkb = new DHKeyBob(sock);
+			DHKeyBob dhkb = new DHKeyBob(sock, myCert, myPrivKey, false);
 			System.out.println("Communication with server now encrypted");
     		AES userAes = new AES(dhkb.getBobSecret());			
 			UserLogin ul = new UserLogin(sock, scan, userAes, alias, ksName, storePass, "");
@@ -98,19 +91,17 @@ public class EchoClient
     			} else {System.out.println("Access granted."); }
     		if (ul.getInitiator()) {
 	    		System.out.println("Please hold for your correspondent to log in." );
-				dhka = new DHKeyAlice(sock);
+				dhka = new DHKeyAlice(sock, myCert, myPrivKey, true);
 				userAes = new AES(dhka.getAliceSecret());
 			} else {
 	    		System.out.println("You are the second user. Your correspondent has initiated Diffie-Hellman." );
-				dhkb = new DHKeyBob(sock);
+				dhkb = new DHKeyBob(sock, myCert, myPrivKey, true);
 				userAes = new AES(dhkb.getBobSecret());
 			}
 			startChat(sock, scan, ul.getUserName(), userAes);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InvalidKeyException | NoSuchAlgorithmException | 
 				NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException e) {
@@ -119,31 +110,54 @@ public class EchoClient
 		} 
     }
     
+    /*produces:
+     * ArrayList<char[]> passwords: 
+     * '0' = Key Store Pass
+     * '1' = Trust Store Pass
+     * '2' = alias pass
+     */
     private ArrayList<char[]> assignKeystorePaths(Scanner scan) {
-    	
-		//System.out.println("What is the keystore file path?");
-		ksName = "C:\\temp-openssl-32build\\clientKeystore\\clientkeystore.jks"; 			
-				//scan.nextLine();
 
+		System.out.println("What is the certificate alias?");
+		alias =  scan.nextLine();
+//"newClientA";//TODO testing
+		//
+		/*
+		 * in production we would not use multiple keystores because
+		 * A) one user per client, presumably would not want to share this
+		 * app with another user
+		 * B) Java JSSE KeyManagerFactory cannot be initialized with 
+		 * keystores containing multiple PrivateKey entries
+		 */
+		System.out.printf("Input key password for %s\n", alias);
+		if (alias.equals("newClientA")) {
+		keypass = "newClientAPass";
+		} else { keypass = "clientBPass";}
+
+		
+		if (alias.equals("newClientA")) {
+		//System.out.println("What is the keystore file path?");
+		ksName = "C:\\temp-openssl-32build\\clientKeystore\\newClientKeystore.jks"; 			
+		} else {
+			ksName = "C:\\temp-openssl-32build\\clientKeystore\\CLIENTBkeystore.jks"; 			
+		}
+		
+		if (alias.equals("newClientA")) {
 		//System.out.println("Input keystore password");
-		storePass = "keYs4clianTs";
+		storePass = "newClientStorePass";
+		} else {
+			storePass = "CLIENTBstorepass";
+		}
     	char[] spass = storePass.toCharArray();  				// password for keystore
     	
 		//System.out.println("What is the trust store file path?");
-		tsName = "C:\\temp-openssl-32build\\clientKeystore\\clientTrustStore.jks"; 			
+		tsName = "C:\\temp-openssl-32build\\clientKeystore\\newClientTrustStore"; 			
 				//scan.nextLine();
 
 		//System.out.println("Input keystore password");
-		trustStorePass = "clianTtrUst";
+		trustStorePass = "newClientTrustPass";
     	char[] tspass = trustStorePass.toCharArray();  				// password for TrustStore
      				
-    	
-		System.out.println("What is the certificate alias?\n");
-		alias = "client";
-				//scan.nextLine();
-		
-		System.out.printf("Input key password for %s", alias);
-		keypass = "client1";
     	char[] kpass = keypass.toCharArray();  // password for private key
      	ArrayList<char[]> passwords = new ArrayList<>();
      	passwords.add(spass);
@@ -173,7 +187,9 @@ public class EchoClient
 			BufferedInputStream tsbufin = new BufferedInputStream(tsfis);
 			ts.load(tsbufin, jksPassWs.get(1));
 			tsfis.close();
-
+			//get client certificate and private key 
+			myCert = ks.getCertificate(alias);
+			myPrivKey = (PrivateKey) ks.getKey(alias, jksPassWs.get(2));
 			//init factories
 			KeyManagerFactory kmf = KeyManagerFactory.getInstance("Sunx509");
 			kmf.init(ks, jksPassWs.get(2));
@@ -185,7 +201,6 @@ public class EchoClient
 			
 			
     	} catch (NoSuchAlgorithmException e1) {
-			// TODO Auto-generated catch block
 			System.err.println(e1.getMessage());
 			e1.printStackTrace();
 		} catch (KeyStoreException e2) {
@@ -193,7 +208,6 @@ public class EchoClient
 			e2.printStackTrace();
 		} catch (CertificateException | IOException 
 					| UnrecoverableKeyException |KeyManagementException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return sc;

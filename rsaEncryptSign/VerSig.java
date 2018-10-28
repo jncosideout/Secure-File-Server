@@ -34,66 +34,41 @@ package rsaEncryptSign;
 import java.io.*;
 import java.security.*;
 import java.security.spec.*;
-import java.net.*;
 
-class VerSig {
+public class VerSig {
 
-    public static void main(String[] args) {
+	private Signature sig;
 
-        /* Verify a DSA signature */
-    	int port = 9999;
-    	
-        try(ServerSocket s = new ServerSocket(port)){ 
-        	System.out.println("waiting for client");
-        	Socket c = s.accept();
-            System.out.println("accepted conn");
-            OutputStream out = c.getOutputStream();
-            DataInputStream din = new DataInputStream(c.getInputStream());
-        	
-            //import raw data
-            int dataLen = din.readInt();
-            byte[] rawData = new byte[dataLen];
-            din.readFully(rawData);
-            
-            /* import the signature bytes */
-            int siglen = din.readInt();
-            byte[] sigToVerify = new byte[siglen]; 
-            din.readFully(sigToVerify );
-            
-            /* import encoded public cert */
-            int certLen = din.readInt();
-            byte[] encodedCert = new byte[certLen];  
-            //din.readFully(encodedCert);
-            
-            java.security.cert.CertificateFactory cf =
-            		java.security.cert.CertificateFactory.getInstance("X.509");
-			java.security.cert.Certificate cert =  cf.generateCertificate(din);
-			PublicKey pub = cert.getPublicKey();
-			
-            System.out.println("pubKey.toString \n" + pub.toString());
-            
+    public VerSig(PublicKey pub) {
+       /* Verify a DSA signature */	
+        try{  
             /* create a Signature object and initialize it with the public key */
-            Signature sig = Signature.getInstance("SHA1withRSA");
+            sig = Signature.getInstance("SHA256withRSA");
             sig.initVerify(pub);
-
-            /* Update and verify the data */
-            sig.update(rawData);
-
-            din.close();
-
-
-            boolean verifies = sig.verify(sigToVerify);
-
-            System.out.println("signature verifies: " + verifies);
-
-           
-            
         } catch (Exception e) {
             System.err.println("Caught exception " + e.toString());
             e.printStackTrace();
         } 
     }
 
-}
+    public boolean verifySignature(DataInputStream din, byte[] rawData) throws IOException {
+        /* import the signature bytes */
+        int siglen = din.readInt();
+        byte[] sigToVerify = new byte[siglen]; 
+        din.readFully(sigToVerify );
+        
+        boolean verifies = false;
+		try {
+	        /* Update and verify the data */
+	        sig.update(rawData);
+			verifies = sig.verify(sigToVerify);
+		} catch (SignatureException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        return verifies; 
+    }
+    
+}//eoc
 
 

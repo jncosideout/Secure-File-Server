@@ -3,6 +3,7 @@ package login;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -22,7 +23,6 @@ import rsaEncryptSign.DHCryptoReceiver;
 
 public class LoginHandler {
 
-	private SSLSocket socket;
 	private PrintWriter pw;
 	private Connection myConnection;
 	private MyJDBChandler handler; 
@@ -31,9 +31,10 @@ public class LoginHandler {
 	public boolean initiator;
 	private Scanner in;
 	private AES serverAes;
+	private String userName, email, givenPassword, fingerprints;
 	
 	public LoginHandler(SSLSocket socket, AES serverAes) throws IOException {
-		this.socket = socket;
+
 		this.serverAes = serverAes;
 		pw = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
 		in = new Scanner(socket.getInputStream());
@@ -70,37 +71,41 @@ public class LoginHandler {
 
 	protected void receiveRequest() throws IOException, SQLException, NoSuchAlgorithmException, InvalidKeySpecException {
 		String request = null;
-		String fingerprints = "";
+		String salt = null;
+		boolean newUser = false;
+		
 		if (in.hasNextLine()) {
 			request = in.nextLine();
 			System.out.println("request received");
 		}
-		if (request.equals("NEW_USER")) {
-			System.out.println("Creating new user entry");
-			insertNewUser();
-		} else if (request.equals("RETURNING_USER")) {
-			System.out.println("Validating returning user credentials");
-			String userName = null, email = null, password = null;
-			try {
-				userName = serverAes.decrypt(in.nextLine());
-				email = serverAes.decrypt(in.nextLine());
-				password = serverAes.decrypt(in.nextLine());
-				fingerprints = serverAes.decrypt(in.nextLine());
-			} catch (InvalidKeyException | NoSuchPaddingException | InvalidAlgorithmParameterException
-					| IllegalBlockSizeException | BadPaddingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+		try {
+			if (request.equals("NEW_USER")) {
+				System.out.println("Creating new user entry");
+				newUser = true;
+				salt = serverAes.decrypt(in.nextLine());
+			} else if (request.equals("RETURNING_USER")) {
+				System.out.println("Validating returning user credentials");
+				newUser = false;
+			}			
+			decryptCredentials();
+			if (newUser) {
+				insertNewUser(salt);
+			} else {
+				//perform a query on the database for the password hash and salt of this user
+				String[] results = handler.searchTable(myConnection, table, userName, email, true, true);
+				  //output format = results[0] = id; [1] = salt; [2] = hash; [3] = fingerprints [4] = iterations; [5] = hash_algo;
+				sendAnswer(verify(results));
 			}
-			//perform a query on the database for the password hash and salt of this user
-			String[] results = handler.searchTable(myConnection, table, userName, email, true, true);
-			  //output format = results[0] = id; [1] = salt; [2] = hash; [3] = fingerprints [4] = iterations; [5] = hash_algo;
-			sendAnswer(verify(results, password, fingerprints));
+		} catch (InvalidKeyException | NoSuchPaddingException | InvalidAlgorithmParameterException
+			| IllegalBlockSizeException | BadPaddingException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
 		}
 	}
 	
-	protected boolean verify(String[] results, String givenPass, String fingerprints) throws NoSuchAlgorithmException, InvalidKeySpecException {
+	protected boolean verify(String[] results) throws NoSuchAlgorithmException, InvalidKeySpecException {
 		int iterations = Integer.parseInt(results[4]);   //           stored hash           stored fingerprints			stored salt
-		ValidateHashedPassW vhpw = new ValidateHashedPassW(givenPass, results[2], fingerprints, results[3], iterations, results[1]); 
+		ValidateHashedPassW vhpw = new ValidateHashedPassW(givenPassword, results[2], fingerprints, results[3], iterations, results[1]); 
 		return vhpw.validate() && vhpw.compareFingerPrints();//true if given pass matches stored pass
 	}
 	
@@ -114,8 +119,15 @@ public class LoginHandler {
 			}
 	}
 	
-	private boolean insertNewUser() {
-		return false;
+	private void decryptCredentials() throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException{
+			userName = serverAes.decrypt(in.nextLine());
+			email = serverAes.decrypt(in.nextLine());
+			givenPassword = serverAes.decrypt(in.nextLine());
+			fingerprints = serverAes.decrypt(in.nextLine());
+	}
+	
+	private void insertNewUser(String saltVal) throws SQLException {
+		handler.insertRow(myConnection, table, userName, email, saltVal, givenPassword, fingerprints, 40000, "PBKDF2WithHmacSHA256");
 	}
 	
 	private boolean deleteUser() {

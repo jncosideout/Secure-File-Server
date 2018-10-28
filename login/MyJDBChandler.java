@@ -200,13 +200,13 @@ public class MyJDBChandler {
 	  }
 	  
 	  public void insertRow(Connection con, String tableName, String userName, String email,
-			 				String saltVal, String hashVal, int iterations, String algo) throws SQLException {
+			 				String saltVal, String hashVal, String fingerPrints, int iterations, String algo) throws SQLException {
 			  
 			  PreparedStatement insert = null;
 			  
 			  String insertString = "INSERT INTO " + dbName + "." + tableName +
-					  			" (user_name, email, iterations, salt, hash, hash_algorithm) " + 
-					  " VALUES (?, ?, ?, ?, ?, ?)";
+					  			" (user_name, email, iterations, salt, hash, hash_algorithm, SHA256_fingerprints) " + 
+					  " VALUES (?, ?, ?, ?, ?, ?, ?)";
 			  
 			  try {
 				  con.setAutoCommit(false);
@@ -217,6 +217,7 @@ public class MyJDBChandler {
 				  insert.setString(4, saltVal);
 				  insert.setString(5, hashVal);
 				  insert.setString(6, algo);
+				  insert.setString(7, fingerPrints);
 				  insert.executeUpdate();
 				  con.commit();
 			  } catch (SQLException sql) {

@@ -34,7 +34,10 @@ import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 
@@ -53,25 +56,46 @@ public class DHKeyAlice {
 	private KeyPairGenerator aliceKpairGen = null;
 	private KeyAgreement aliceKeyAgree = null;
 	private byte[] aliceSharedSecret = null;
+	private java.security.cert.Certificate myCert;
 	
-	public DHKeyAlice(SSLSocket socket) {
+	public DHKeyAlice(SSLSocket socket, java.security.cert.Certificate myCert, PrivateKey myPrivKey, boolean toClientPeer) {
+		this.myCert = myCert;
+		
 		try {
 			DataOutputStream dOut = new DataOutputStream(socket.getOutputStream());
 			DataInputStream dIn = new DataInputStream(socket.getInputStream()); 
+			
+			//need to kickstart synchronized handshake
+			dOut.writeInt(1);
 
-			// TODO Alice encodes her public key, and sends it over to Bob.
+			//send encoded our cert to peer
+			if (toClientPeer) { sendCertificateToClientPeer(dOut); 
+			} else {sendCertificate(dOut); }
+			
+			PublicKey bobsPubKey = receiveCertInstantiateKey(dIn);//receive our peer's cert
+			GenSig gs = new GenSig(myPrivKey);//for signing DH prime num parameters
+			VerSig vs = new VerSig(bobsPubKey);//for verifying peer's DH prime num parameters
+			
+			// Alice encodes her public key, and sends it over to Bob.
 			byte[] alicePubKeyEnc = genKeyPair();
 			int aPKElen = alicePubKeyEnc.length;
 			dOut.writeInt(aPKElen);
 			Thread.sleep(200);
 			dOut.write(alicePubKeyEnc);
 			dOut.flush();
-			Thread.sleep(200);
-			// TODO receive bobPubKeyEnc
+			gs.sendSignature(dOut, alicePubKeyEnc);
+			Thread.sleep(500);
+			
+			//  receive bobPubKeyEnc
 			int bPKElen = dIn.readInt();
 			byte[] bobPubKeyEnc = new byte[bPKElen];
 			dIn.readFully(bobPubKeyEnc);
+			if (!vs.verifySignature(dIn, bobPubKeyEnc)){
+			throw new Exception("Invalid Signature! Discontinuing DH Key exchange.");	
+			}
+			System.out.println("Signature is valid");
 			alicePhaseOne(bobPubKeyEnc);
+			
 			// create shared secret
 			int aliceLen = sharedSecret();
 			// send aliceLen to bob
@@ -80,6 +104,8 @@ public class DHKeyAlice {
 			//DEMO PURPOSES TO CONFIRM SAME SHAREDSECRET
 			dOut.write(aliceSharedSecret);
 			dOut.flush();
+			//to keep this thread from exiting early
+			if (toClientPeer) { dIn.readInt();}
 			
 		} catch (IOException | InterruptedException e) {
 			// TODO Auto-generated catch block
@@ -90,10 +116,57 @@ public class DHKeyAlice {
 		} catch (IllegalStateException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} catch (Exception falseSig) {
+			System.out.println(falseSig.getMessage());
 		}
 		
 		
 		
+	}
+
+	private void sendCertificate(DataOutputStream dos) throws IOException {
+        /* Send the public certificate to peer */	
+		byte[] encodedCert = null;
+		try {
+			encodedCert = myCert.getEncoded();
+		} catch (CertificateEncodingException e) {
+			e.printStackTrace();
+		}
+        dos.write(encodedCert);
+        dos.flush();
+	}
+	
+	private void sendCertificateToClientPeer(DataOutputStream dos) throws IOException {
+        /* Send the public certificate to peer */	
+		byte[] encodedCert = null;
+		try {
+			encodedCert = myCert.getEncoded();
+		} catch (CertificateEncodingException e) {
+			e.printStackTrace();
+		}
+		int certLen = encodedCert.length;
+		dos.writeInt(certLen);
+        dos.write(encodedCert);
+        dos.flush();
+	}
+	
+	private PublicKey receiveCertInstantiateKey (DataInputStream dIn) throws IOException {
+        
+        /* import encoded public cert */
+        java.security.cert.Certificate bobsCert = null;
+		try {
+			java.security.cert.CertificateFactory cf =
+	        		java.security.cert.CertificateFactory.getInstance("X.509");
+			//automatically read in through dIn
+			bobsCert = cf.generateCertificate(dIn);
+		} catch (CertificateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		PublicKey bobsPubKey = bobsCert.getPublicKey();
+		System.out.println("here is your peer's public key");
+		System.out.println(bobsPubKey.toString());
+		return bobsPubKey;
 	}
 	
 	private byte[] genKeyPair() throws NoSuchAlgorithmException, InvalidKeyException {
@@ -149,7 +222,7 @@ public class DHKeyAlice {
 		aliceLen = aliceSharedSecret.length;
 		System.out.println("Alice secret: " +
                 toHexString(aliceSharedSecret));
-         // TODO send aliceLen to Bob!    
+         //  send aliceLen to Bob!    
 		return aliceLen;
 	}
 			

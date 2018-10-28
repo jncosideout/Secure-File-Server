@@ -4,6 +4,7 @@ package ExecuteBat;
 import java.io.*;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
 /**
  * This class can be used to execute a system command from a Java application.
@@ -73,7 +74,7 @@ public class SystemCommandExecutor
    *
    * @param commandInformation The command you want to run.
    */
-  public SystemCommandExecutor(final List<String> commandInformation)
+  public SystemCommandExecutor(final List<String> commandInformation, Scanner userInput)
   {
     if (commandInformation==null) throw new NullPointerException("The commandInformation is required.");
     this.commandInformation = commandInformation;
@@ -88,24 +89,23 @@ public class SystemCommandExecutor
     		break;
     	} 
     }
-   // runCertReq = false; //TESTING PURPOSES
     if (runGenKey) {
   //setup for eventual -genkey questions
     	
-//  System.out.println("Enter common name"));
-//	String commonName = userInput.nextLine();
-//	System.out.println("Enter name of your organizational unit"));
-//	String orgU = userInput.nextLine();
-//	System.out.println("name of your organization"));
-//	String org = userInput.nextLine();
-//	System.out.println("name of your City or Locality"));
-//	String local = userInput.nextLine();
-//	System.out.println("name of your State or Province"));
-//	String state = userInput.nextLine();
-//	System.out.println("Enter two-letter country code"));
-//	String country = userInput.nextLine();
+  System.out.println("Enter common name");
+	// commonName = userInput.nextLine();
+	System.out.println("Enter name of your organizational unit");
+	// orgU = userInput.nextLine();
+	System.out.println("name of your organization");
+	// org = userInput.nextLine();
+	System.out.println("name of your City or Locality");
+	// local = userInput.nextLine();
+	System.out.println("name of your State or Province");
+	// state = userInput.nextLine();
+	System.out.println("Enter two-letter country code");
+	//country = userInput.nextLine();
   
-    commonName = "testName3";
+    commonName = "ClientA";
 	orgU = "testOrgU";
 	org = "testOrg";
 	local = "testLocality";
@@ -133,9 +133,9 @@ public class SystemCommandExecutor
 //      env.put("VAR2", env.get("VAR1") + "suffix");
       File dir = null;//the working directory for the process1
       if (runGenKey || runCertReq || fingerprints) { //TODO change this
-    	  dir = new File("C:\\Users\\Alex\\Desktop");//directory for NEWclientkeystore TEST file
-      } else {  dir = new File("C:\\Program Files\\Java\\jre1.8.0_144\\bin"); }//directory for main client server keystores
-	  pb.directory(dir);
+        dir = new File("C:\\Program Files\\Java\\jre1.8.0_144\\bin"); //directory for main client server keystores
+      } else {  dir = new File("C:\\Users\\Alex\\Desktop");}//directory for NEWclientkeystore TEST file
+      pb.directory(dir);
       Process process = pb.start();
 
       // you need this if you're going to write something to the command's input stream
@@ -193,10 +193,9 @@ public class SystemCommandExecutor
       // TODO deal with this here, or just throw it?
       throw e;
     }
-    finally
-    {
+   
       return exitValue;
-    }
+    
   }
 
   /**
