@@ -65,10 +65,10 @@ public class DHKeyAlice {
 			DataOutputStream dOut = new DataOutputStream(socket.getOutputStream());
 			DataInputStream dIn = new DataInputStream(socket.getInputStream()); 
 			
-			//need to kickstart synchronized handshake
+			//needed to kickstart synchronized handshake
 			dOut.writeInt(1);
 
-			//send encoded our cert to peer
+			//send our encoded cert to peer
 			if (toClientPeer) { sendCertificateToClientPeer(dOut); 
 			} else {sendCertificate(dOut); }
 			
@@ -137,7 +137,11 @@ public class DHKeyAlice {
 	}
 	
 	private void sendCertificateToClientPeer(DataOutputStream dos) throws IOException {
-        /* Send the public certificate to peer */	
+        /* Send the public certificate to peer
+         * We use this method when DH agreement takes 
+         * place between two connected clients 
+         * indirectly via their DHKeyEchoThreads
+         *  */
 		byte[] encodedCert = null;
 		try {
 			encodedCert = myCert.getEncoded();
@@ -160,11 +164,10 @@ public class DHKeyAlice {
 			//automatically read in through dIn
 			bobsCert = cf.generateCertificate(dIn);
 		} catch (CertificateException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		PublicKey bobsPubKey = bobsCert.getPublicKey();
-		System.out.println("here is your peer's public key");
+		System.out.println("here is your peer's RSA public key");
 		System.out.println(bobsPubKey.toString());
 		return bobsPubKey;
 	}

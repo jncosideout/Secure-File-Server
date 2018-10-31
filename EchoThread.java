@@ -75,7 +75,7 @@ public class EchoThread extends Thread
 			
 				} catch (IOException eof){
 					System.err.println(eof.getMessage());
-					System.out.println("after ping");
+					System.out.println("client connection shutdown");
 					socket.close();
 					System.out.println("after socket.close");
 					objInput.close();			
@@ -83,18 +83,16 @@ public class EchoThread extends Thread
 					clientOut.close();
 					System.out.println("after clientOut.close");
 					
-					break;
+					
 				} catch (Exception e) {
-					// TODO: handle exception
 					e.printStackTrace();
-				}
-			} //end if/else
-		
+				} 
+			} //end while
 		
 			try {
 				server.removeClient(this);
+				System.out.println("join EchoThread");
 				join();
-				System.out.println("after join");
 			} catch (InterruptedException ie) {
 				ie.printStackTrace();
 			}

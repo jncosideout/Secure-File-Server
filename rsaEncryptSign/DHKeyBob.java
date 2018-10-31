@@ -67,16 +67,16 @@ public class DHKeyBob {
 			DataInputStream dIn = new DataInputStream(socket.getInputStream()); 
 			DataOutputStream dOut = new DataOutputStream(socket.getOutputStream());
 			
-			//need to kickstart synchronized handshake
+			//needed to kickstart synchronized handshake
 			dIn.readInt();
 			
 			//receive our peer's cert
-			PublicKey bobsPubKey = receiveCertInstantiateKey(dIn);
+			PublicKey alicesPubKey = receiveCertInstantiateKey(dIn);
 			//send encoded our cert to peer
 			if (toClientPeer) { sendCertificateToClientPeer(dOut);
 			} else {sendCertificate(dOut);}
 			GenSig gs = new GenSig(myPrivKey);//for signing DH prime num parameters
-			VerSig vs = new VerSig(bobsPubKey);//for verifying peer's DH prime num parameters
+			VerSig vs = new VerSig(alicesPubKey);//for verifying peer's DH prime num parameters
 			
 			// receive alicePubKeyEnc
 			int aPKElen = dIn.readInt();
@@ -108,7 +108,9 @@ public class DHKeyBob {
 			byte[] aliceSharedSecret = new byte[aliceLen];
 			dIn.readFully(aliceSharedSecret);
 			confirmSharedSecret(aliceSharedSecret);
-			//to force the thread to wait
+			//to notify finished to DHKeyEchoThread2
+			if (toClientPeer) { dOut.writeInt(0);}
+			//receive green light from DHKeyEchoThread2
 			if (toClientPeer) { dIn.readInt();}
 		} catch (IOException | InterruptedException e) {
 			// TODO Auto-generated catch block
@@ -139,7 +141,11 @@ public class DHKeyBob {
 	}
 	
 	private void sendCertificateToClientPeer(DataOutputStream dos) throws IOException {
-        /* Send the public certificate to peer */	
+        /* Send the public certificate to peer 
+         *  We use this method when DH agreement takes 
+         * place between two connected clients 
+         * indirectly via their DHKeyEchoThreads
+         *  */	
 		byte[] encodedCert = null;
 		try {
 			encodedCert = myCert.getEncoded();
@@ -158,14 +164,13 @@ public class DHKeyBob {
 		try {
 			java.security.cert.CertificateFactory cf =
 	        		java.security.cert.CertificateFactory.getInstance("X.509");
-			//automatically read in through dIn
+			//automatically read through dIn
 			alicesCert = cf.generateCertificate(dIn);
 		} catch (CertificateException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		PublicKey alicePubKey = alicesCert.getPublicKey();
-		System.out.println("here is your peer's public key");
+		System.out.println("here is your peer's RSA public key");
 		System.out.println(alicePubKey.toString());
 		return alicePubKey;
 	}
@@ -189,6 +194,8 @@ public class DHKeyBob {
          * Bob gets the DH parameters associated with Alice's public key.
          * He must use the same parameters when he generates his own key
          * pair.
+         * This includes the prime modulus (p) and generator (g) 
+         * which are randomly chosen large prime numbers
          */
         DHParameterSpec dhParamFromAlicePubKey = ((DHPublicKey)alicePubKey).getParams();
 
