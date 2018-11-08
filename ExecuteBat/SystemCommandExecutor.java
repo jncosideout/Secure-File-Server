@@ -74,7 +74,7 @@ public class SystemCommandExecutor
    *
    * @param commandInformation The command you want to run.
    */
-  public SystemCommandExecutor(final List<String> commandInformation, Scanner userInput)
+  public SystemCommandExecutor(final List<String> commandInformation)
   {
     if (commandInformation==null) throw new NullPointerException("The commandInformation is required.");
     this.commandInformation = commandInformation;

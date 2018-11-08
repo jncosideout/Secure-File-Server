@@ -15,18 +15,18 @@ public class ProcessBuilderExample
   {
 	  Scanner userInput = new Scanner(System.in);
 	  ProcessBuilderExample pbe = new ProcessBuilderExample("list", "testAlias1", "testKP1", 
-			  								"NEWclientkeystore.jks", "NEWkeYs4clianTs", "testNEW1.csr", userInput);
+			  								"NEWclientkeystore.jks", "NEWkeYs4clianTs", "testNEW1.csr");
     System.out.println("here are fPrints");
     System.out.println(pbe.getfPrints());
   }
  
   public ProcessBuilderExample(String keytoolCommand, String newAlias, String newKeyPass,
-		  								String keystore, String storePass, String csrFile, Scanner userInput) throws IOException, InterruptedException
+		  								String keystore, String storePass, String csrFile) throws IOException, InterruptedException
   {
     setCommands(keytoolCommand, newAlias, newKeyPass, keystore, storePass, csrFile);
    		
     // execute the command
-    SystemCommandExecutor commandExecutor = new SystemCommandExecutor(commands, userInput);
+    SystemCommandExecutor commandExecutor = new SystemCommandExecutor(commands);
     int result = commandExecutor.executeCommand();
     fPrints = commandExecutor.getfPrints();//in case keytool list was called for fingerprints
     // get the stdout and stderr from the command that was run
