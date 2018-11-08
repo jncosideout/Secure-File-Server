@@ -65,18 +65,25 @@ public class DHKeyAlice {
 			DataOutputStream dOut = new DataOutputStream(socket.getOutputStream());
 			DataInputStream dIn = new DataInputStream(socket.getInputStream()); 
 			
-			//needed to kickstart synchronized handshake
-			dOut.writeInt(1);
+			//needed to kickstart synchronized handshake with server
+			if (!toClientPeer) {dOut.writeInt(1);}
 
 			//send our encoded cert to peer
-			if (toClientPeer) { sendCertificateToClientPeer(dOut); 
-			} else {sendCertificate(dOut); }
+			/*two methods because client-to-client
+			 * goes through DHKeyEchoThread2
+			 */
+			if (toClientPeer) { sendCertificateToClientPeer(dOut); //to another client
+			} else {sendCertificate(dOut); } //to server
+			/*//receive our peer's RSA cert
+			 * then extract RSA public key from it
+			 */
+			PublicKey bobsPubKey = receiveCertInstantiateKey(dIn);
+			//for signing DH prime num parameters
+			GenSig gs = new GenSig(myPrivKey);
+			//for verifying peer's DH prime num parameters
+			VerSig vs = new VerSig(bobsPubKey);
 			
-			PublicKey bobsPubKey = receiveCertInstantiateKey(dIn);//receive our peer's cert
-			GenSig gs = new GenSig(myPrivKey);//for signing DH prime num parameters
-			VerSig vs = new VerSig(bobsPubKey);//for verifying peer's DH prime num parameters
-			
-			// Alice encodes her public key, and sends it over to Bob.
+			// Alice encodes her DH public key, and sends it over to Bob.
 			byte[] alicePubKeyEnc = genKeyPair();
 			int aPKElen = alicePubKeyEnc.length;
 			dOut.writeInt(aPKElen);
@@ -86,7 +93,7 @@ public class DHKeyAlice {
 			gs.sendSignature(dOut, alicePubKeyEnc);
 			Thread.sleep(500);
 			
-			//  receive bobPubKeyEnc
+			//  receive Bob's DH Public Key
 			int bPKElen = dIn.readInt();
 			byte[] bobPubKeyEnc = new byte[bPKElen];
 			dIn.readFully(bobPubKeyEnc);
@@ -225,7 +232,7 @@ public class DHKeyAlice {
 		aliceLen = aliceSharedSecret.length;
 		System.out.println("Alice secret: " +
                 toHexString(aliceSharedSecret));
-         //  send aliceLen to Bob!    
+         //  send aliceLen to Bob so he can finish the protocol    
 		return aliceLen;
 	}
 			

@@ -5,7 +5,10 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 import javax.net.ssl.SSLSocket;
-
+/*This class is designed for facilitating a Diffie-Hellman 
+ * key exchange between 2 parties. DH with 3 or more parties
+ * would require a new protocol and is far more complicated.
+ */
 public class DHKeyEchoThread2 extends Thread{
 
 	private EchoServer server;
@@ -23,13 +26,12 @@ public class DHKeyEchoThread2 extends Thread{
 			dos = new DataOutputStream(this.socket.getOutputStream());
 			dis = new DataInputStream(this.socket.getInputStream());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 		
 	public void run() {
-		if (isSender) {
+		if (isSender) {//true if this client is initiating DH 
 			alice();			
 		} else {
 			bob();
@@ -38,11 +40,10 @@ public class DHKeyEchoThread2 extends Thread{
 		try {
 			dos.writeInt(0);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		EchoThread client = new EchoThread(server, socket);
-		client.start();                 // Fork the thread
+		client.start();// Fork the thread, start the chat
 		server.getClients().add(client);
 		
 
@@ -54,20 +55,17 @@ public class DHKeyEchoThread2 extends Thread{
 				//his DHKeyEchoThread2
 				lock.wait();
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 		for (DHKeyEchoThread2 bob : server.getDHClients()) {
 			if (!bob.equals(this)){
 				try {
-					//need to kickstart synchronized handshake
-					int hs = dis.readInt();
-					bob.dos.writeInt(hs);
-					
+	
 					//Alice sends her certificate for signature verification
 					int certLen = dis.readInt();
-					byte[] encodedCert = new byte[certLen];//in this case cert is read in without length
+					//in this case cert is read in by Bob without length to initialize an array
+					byte[] encodedCert = new byte[certLen];
 					dis.readFully(encodedCert);
 					bob.dos.write(encodedCert);
 					bob.dos.flush();
@@ -86,11 +84,12 @@ public class DHKeyEchoThread2 extends Thread{
 						dis.readFully(signature);
 						bob.dos.write(signature);
 						bob.dos.flush();
-						//Alice: received bobPubKeyEnc
-						// 1) received int bPKElen
-						// 2) received byte[] bobPubKeyEnc 
-						// 3) created shared secret
-						//Now send aliceLen to bob so 
+						//Alice has:
+						// 1) received bobPubKeyEnc
+						// 2) received int bPKElen
+						// 3) received byte[] bobPubKeyEnc 
+						// 4) created shared secret
+						//Now send aliceLen to Bob so that
 						//he can create the shared secret
 						int aliceLen = dis.readInt();
 						bob.dos.writeInt(aliceLen);
@@ -105,12 +104,11 @@ public class DHKeyEchoThread2 extends Thread{
 					} 
 					break;
 			}
-		}
+		}//wait for Bob thread to finish
 		synchronized (lock) {
 			try {
 				lock.wait();
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -120,20 +118,20 @@ public class DHKeyEchoThread2 extends Thread{
 		for (DHKeyEchoThread2 alice : server.getDHClients()) {
 			if (!alice.equals(this)){
 				try {
-				        
+				        //wake up Alice thread
 				        synchronized (lock) {lock.notify();}
-						//Bob just received kickstart handshake signal
 
 						//Bob sends his certificate for signature verification
 						int certLen = dis.readInt();
-						byte[] encodedCert = new byte[certLen];//in this case cert is read in without length
+						//in this case Alice reads cert without length to initialize an array
+						byte[] encodedCert = new byte[certLen];
 						dis.readFully(encodedCert);
 						alice.dos.write(encodedCert);
 						alice.dos.flush();
 						
-				        //Bob received alicePubKeyEnc
-						//Bob created alicePubKey
-
+				        //Bob has:
+						// 1) received alicePubKeyEnc
+						// 2) created alicePubKey
 				        //Now sending bobPubKeyEnc DH parameters
 				        int bPKElen;
 				        bPKElen = dis.readInt();
@@ -142,6 +140,7 @@ public class DHKeyEchoThread2 extends Thread{
 						dis.readFully(bobPubKeyEnc);
 						alice.dos.write(bobPubKeyEnc);
 						alice.dos.flush();
+						//Send signature for Alice to verify
 						int sigLen = dis.readInt();
 						alice.dos.writeInt(sigLen);
 						byte[] signature = new byte[sigLen];
@@ -150,15 +149,15 @@ public class DHKeyEchoThread2 extends Thread{
 						alice.dos.flush();
 						// received aliceLen
 						// created bobSharedSecret
-						//to synchronize with client DHKeyBob
-						//read his signal to end of process
+						//Now to stay synchronized with client DHKeyBob,
+						//read his signal of "end of process"
 						dis.readInt();
 					}  catch (Exception e) {
 						e.printStackTrace();
 					} 
 					break;
 			}
-		}
+		}//wake up Alice thread
         synchronized (lock) {lock.notify();}
 	}
 	

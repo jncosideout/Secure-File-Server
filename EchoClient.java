@@ -15,6 +15,17 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.net.ssl.*;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.JTextPane;
+import javax.swing.SwingUtilities;
+import javax.swing.text.DefaultCaret;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
 
 import login.UserLogin;
 import rsaEncryptSign.DHCryptoInitiator;
@@ -25,19 +36,24 @@ import java.io.DataOutputStream;
 import java.io.ObjectOutputStream;  // Used to write objects to the server
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
 /**
- * Simple client class.  This class connects to an EchoServer to send
- * text back and forth.  Java message serialization is used to pass
+ * This class connects to an EchoServer to sends encrypted messages 
+ *  back and forth.  Java message serialization is used to pass
  * Message objects around.
  *
  *
  */
-public class EchoClient
-{
+public class EchoClient implements ActionListener, Runnable
+{							
 	public static final String host = "localhost";
 	
 	private String serverHost;
@@ -47,58 +63,115 @@ public class EchoClient
     private String tsName; //file path of trust store
     private String	trustStorePass;
 	private String alias;
-	private String keypass;
+	private char[] keyPass;
+	private String userName;
+	private String email;
+	private char[] password;
 	private java.security.cert.Certificate myCert;
 	private PrivateKey myPrivKey;
-	/**
-     * Main method.
-     *
-     * @param args  First argument specifies the server to connect to
-     *
-     */
-    public static void main(String[] args) {
-     Scanner userInputScanner = new Scanner(System.in);
-	 	 
-	 EchoClient client = new EchoClient(host, EchoServer.SERVER_PORT);
-	 client.startClient(userInputScanner);
+	private ObjectOutputStream oos;
+	private SSLSocket sock;
+	private AES userAes;
+	private int new_return;//'0'=new user, '1'=returning user
+	private int initiate_DH;//'0' if chose to initiate DH with next logged in user
+							//'1' if chose to be the next logged in user
+	
+    private final JFrame f = new JFrame();
+    private final JTextField tf = new JTextField(25);
+    protected final JTextPane tp = new JTextPane();
+    private final JButton send = new JButton("Send");
+    private Thread thread;
 
-	 userInputScanner.close();
+
+    public static void main(String[] args) {
+	 	 
+    	 new LoginWindow(host, EchoServer.SERVER_PORT);
     }//-- end main(String[])
 
 
-    private EchoClient(String host, int portNumber) {
+    public EchoClient(String userName, char[] password, String alias, char[] keyPass, String email,
+    		String host, int portNumber, int new_return, int initiate_DH) {
+    this.userName = userName;
+    this.password = password;
+    this.alias = alias;
+    this.keyPass = keyPass; 
+    this.email = email;
     serverPort = portNumber;
     serverHost = host;
+    this.new_return = new_return;
+    this.initiate_DH = initiate_DH; 
+    //setup GUI
+    f.setTitle("Secure Chat Client");
+    f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    f.getRootPane().setDefaultButton(send);
+    f.setPreferredSize(new Dimension(400, 600));
+    f.add(tf, BorderLayout.NORTH);
+    f.add(new JScrollPane(tp), BorderLayout.CENTER);
+    f.add(send, BorderLayout.SOUTH);
+    f.pack();
+    send.addActionListener(this);
+    tp.setEditable(false);
+    DefaultCaret caret = (DefaultCaret) tp.getCaret();
+    caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+    display("Trying " + host + " on port " + portNumber);
+    thread = new Thread(this);
+    
     }
     
-    private void startClient(Scanner scan) {
-    	ArrayList<char[]> jksPassWs = assignKeystorePaths(scan);
+    public void start() {
+        f.setVisible(true);
+        thread.start();
+    }
+    
+    public void run() {
+    	ArrayList<char[]> jksPassWs = assignKeystorePaths();
     	SSLContext sc = initSSLContext(jksPassWs);
     	SSLSocketFactory factory = sc.getSocketFactory();
-    	SSLSocket sock = connect(factory);
+    	sock = connect(factory);
     	
     	try {
-			DHKeyAlice dhka = null; //possible DHKeyAlice
+			DHKeyAlice dhka = null; //may use this later if client chose to initiate DH exchange 
     		Thread.sleep(200);
-    		System.out.println("begin DH key exchange with server");
+    		display("begin DH key exchange with server");
 			DHKeyBob dhkb = new DHKeyBob(sock, myCert, myPrivKey, false);
-			System.out.println("Communication with server now encrypted");
-    		AES userAes = new AES(dhkb.getBobSecret());			
-			UserLogin ul = new UserLogin(sock, scan, userAes, alias, ksName, storePass, "");
+			display("Communication with server now encrypted");
+			//initialize an AES obj with new shared DH key
+    		userAes = new AES(dhkb.getBobSecret());
+    		display("Begin secure login");
+    		/*If returning user, send credentials and receive authentication response
+    		 * If new user, send new credentials, create new certificate
+    		 * 		server stores new data and access is denied, program closes.
+    		 * 		a new user will not be able to chat immediately because his certificate
+    		 * 		has not been signed yet. This must happen offline.
+    		 */
+			UserLogin ul = new UserLogin(sock, userAes, alias, ksName, storePass, "", userName, email,
+					password, keyPass, new_return, initiate_DH);
     		if (!ul.getVerified()) {								
-    			System.out.println("Access denied. Exiting program");
+    			display("Access denied. Exiting program");
     			System.exit(1);
-    			} else {System.out.println("Access granted."); }
+    			} else {display("Access granted."); }
     		if (ul.getInitiator()) {
-	    		System.out.println("Please hold for your correspondent to log in." );
+	    		display("Please hold for your correspondent to log in." );
+	    		/* DH key exchange will begin after 2nd client joins.
+	    		 * This client connection was handed off to her DHKeyEchoThread2
+	    		 * which gets put in waiting state.
+	    		 */
 				dhka = new DHKeyAlice(sock, myCert, myPrivKey, true);
 				userAes = new AES(dhka.getAliceSecret());
 			} else {
-	    		System.out.println("You are the second user. Your correspondent has initiated Diffie-Hellman." );
-				dhkb = new DHKeyBob(sock, myCert, myPrivKey, true);
+	    		display("You are the second user. Your correspondent has initiated Diffie-Hellman." );
+				/*DH key exchange between two clients may now begin.
+				 * 2nd client's connection was handed off to his DHKeyEchoThread2
+				 * which notifies the waiting thread
+				 */
+	    		dhkb = new DHKeyBob(sock, myCert, myPrivKey, true);
 				userAes = new AES(dhkb.getBobSecret());
 			}
-			startChat(sock, scan, ul.getUserName(), userAes);
+    		/*newly created DH key is passed along with socket.
+    		 * The server has passed its socket to an EchoThread
+    		 * which will distribute chatroom messages
+    		 */
+			startChat();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {
@@ -110,55 +183,48 @@ public class EchoClient
 		} 
     }
     
-    /*produces:
+    /*This sets up file descriptors and passwords for keystores and truststores
+     * used in the TLS connection. This information is also used for RSA signatures
+     * during DH key exchanges.
+     * Method produces:
      * ArrayList<char[]> passwords: 
      * '0' = Key Store Pass
      * '1' = Trust Store Pass
      * '2' = alias pass
      */
-    private ArrayList<char[]> assignKeystorePaths(Scanner scan) {
+    private ArrayList<char[]> assignKeystorePaths() {
 
-		System.out.println("What is the certificate alias?");
-		alias =  scan.nextLine();
-//"newClientA";//TODO testing
-		//
 		/*
 		 * in production we would not use multiple keystores because
-		 * A) one user per client, presumably would not want to share this
-		 * app with another user
+		 * A) one user per client, presumably would not want to share
+		 * sccess to this program with another user
 		 * B) Java JSSE KeyManagerFactory cannot be initialized with 
 		 * keystores containing multiple PrivateKey entries
 		 */
-		System.out.printf("Input key password for %s\n", alias);
 		if (alias.equals("newClientA")) {
-		keypass = "newClientAPass";
-		} else { keypass = "clientBPass";}
+		keyPass = "newClientAPass".toCharArray();
+		} else { keyPass = "clientBPass".toCharArray();}
 
-		
+		//again, hard-coded for testing purposes
 		if (alias.equals("newClientA")) {
-		//System.out.println("What is the keystore file path?");
 		ksName = "C:\\temp-openssl-32build\\clientKeystore\\newClientKeystore.jks"; 			
 		} else {
 			ksName = "C:\\temp-openssl-32build\\clientKeystore\\CLIENTBkeystore.jks"; 			
 		}
-		
+		//also hard-coded for testing purposes
 		if (alias.equals("newClientA")) {
-		//System.out.println("Input keystore password");
 		storePass = "newClientStorePass";
 		} else {
 			storePass = "CLIENTBstorepass";
 		}
-    	char[] spass = storePass.toCharArray();  				// password for keystore
+    	char[] spass = storePass.toCharArray();// password for keystore
     	
-		//System.out.println("What is the trust store file path?");
 		tsName = "C:\\temp-openssl-32build\\clientKeystore\\newClientTrustStore"; 			
-				//scan.nextLine();
 
-		//System.out.println("Input keystore password");
 		trustStorePass = "newClientTrustPass";
-    	char[] tspass = trustStorePass.toCharArray();  				// password for TrustStore
+    	char[] tspass = trustStorePass.toCharArray();// password for TrustStore
      				
-    	char[] kpass = keypass.toCharArray();  // password for private key
+    	char[] kpass = keyPass;// password for alias' RSA private key
      	ArrayList<char[]> passwords = new ArrayList<>();
      	passwords.add(spass);
      	passwords.add(tspass);
@@ -167,6 +233,10 @@ public class EchoClient
  		return passwords;  
      }
     
+    /*initialize an SSLContext for the client.
+     * Set for TLS1.2 and register the client's
+     *  keystore and truststore 
+     */
     public SSLContext initSSLContext(ArrayList<char[]> jksPassWs) {
     	
     	SSLContext sc =  null;
@@ -212,18 +282,21 @@ public class EchoClient
 		}
 		return sc;
     }
-    
+    /*Return the socket for this connection
+     * This is where TLS ciphersuites should be restricted
+     */
     public SSLSocket connect(SSLSocketFactory factory) {
     	SSLSocket sock = null;
     	try{
     	    // Connect to the specified server
     		
     	    sock = (SSLSocket) factory.createSocket(serverHost, serverPort);
-//			String[] suites = {"TLS_RSA_WITH_AES_128_CBC_SHA256"};
+    	    String[] suites = sock.getSupportedCipherSuites();
+//{"TLS_RSA_WITH_AES_128_CBC_SHA256"};
 //			sock.setEnabledCipherSuites(suites);
 			
     	    Thread.sleep(1000);
-    	    System.out.println("\nConnected to " + host + " on port " + EchoServer.SERVER_PORT);
+    	    display("\nConnected to " + host + " on port " + EchoServer.SERVER_PORT);
     	    
 	    } catch(Exception e) {
 			System.err.println("Error: " + e.getMessage());
@@ -231,57 +304,106 @@ public class EchoClient
 		}
 		return sock;  
     }
-    
-    public void startChat(SSLSocket sock, Scanner scan, String userName, AES userAes) throws IOException, InterruptedException,
+    /*Start a ServerThread to receive chat messages
+     * Initialize our ObjectOutputStream
+     * Print our TLS session details
+     */
+    public void startChat() throws IOException, InterruptedException,
     InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException {
 
-	    ServerThread serverThread = new ServerThread(sock, userName, userAes);
-	    Thread serverAccessThread = new Thread(serverThread);
-	    serverAccessThread.start();
+	    ServerThread serverThread = new ServerThread(sock, userName, userAes, tp);
+	    serverThread.execute();
 	    
-	    ObjectOutputStream oos = new ObjectOutputStream(sock.getOutputStream());
-	    
-	    while (serverAccessThread.isAlive())
-	    {
-	    	Message clientMsg = null;
-	    	if (scan.hasNextLine() ) {
-	    		if (scan.hasNext("goodbye")) {
-	    			sock.close();
-		    	    System.out.println("Leaving chat");
-	    			break;
-	    		}
-	    		else {
-					String nextSend = userName + " > " + scan.nextLine();
-					String ciphertext = userAes.encrypt(nextSend);
-					byte[] cipherhash = Message.computeHash(ciphertext, userAes);
-					clientMsg = new Message(ciphertext, cipherhash);
-					oos.writeObject(clientMsg);
-					oos.flush();
-				
-				}
-	    	}//end if
-	    }//end while
-	    
-	    serverAccessThread.join();
-	    System.err.println("after serverThread.join(); in EchoClient");
-	    
-    }
+	    oos = new ObjectOutputStream(sock.getOutputStream());
+	    //get session after connection is established
+		SSLSession session = sock.getSession();
+		
+		display("Session details: ");
+		display("\tProtocol: " + session.getProtocol());
+		display("\tCipher suite: " + session.getCipherSuite());
+		display("Begin chatting.");
 
+    }
+    /*Pushing 'send' button
+     * chat messages are encrypted here using DH session key shared with 
+     * one correspondent, then create an HMAC of the encrypted message,
+     * then send them together to the correspondent.
+     * (non-Javadoc)
+     * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+     */
+    //@Override
+    public void actionPerformed(ActionEvent ae) {
+        String s = tf.getText();
+    	Message clientMsg = null;
+
+        try {
+			if (oos != null) {
+					if (s.toUpperCase().contains("goodbye")) {
+						sock.close();
+			    	    display("Leaving chat");
+					}
+					else {
+						String nextSend = userName + " > " + s;
+						String ciphertext = userAes.encrypt(nextSend);
+						byte[] cipherhash = Message.computeHash(ciphertext, userAes);
+						clientMsg = new Message(ciphertext, cipherhash);
+						oos.writeObject(clientMsg);
+						oos.flush();
+					
+					}
+				}//end if
+		} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException | IllegalBlockSizeException
+				| BadPaddingException | IOException e) {
+			e.printStackTrace();
+		}
+        
+        tf.setText("");
+    }
+    /*Used to find out supported cipher suites and 
+     * supported TLS versions
+     */
     public void printParams(SSLContext sc) {
 		SSLParameters params = sc.getSupportedSSLParameters();
 		String[] ciphers = params.getCipherSuites();
 		String[] protocols = params.getProtocols();
-		System.out.println("supported cipher suites are: \n");
+		display("supported cipher suites are: \n");
 		for (String c : ciphers) {
-			System.out.println(c + "\n");
+			display(c + "\n");
 		}
-		System.out.println("Supported protocols are: \n");
+		display("Supported protocols are: \n");
 		for (String p : protocols) {
-			System.out.println(p +"\n");
+			display(p +"\n");
 		}
 		
-		System.out.println("client session : " + sc.getClientSessionContext());
+		display("client session : " + sc.getClientSessionContext());
 	
     }
-   
+   /*Print stylized messages to the GUI
+    * Each new line is added to the document model of 
+    * the JTextPane
+    */
+    private void display(final String s) {
+    	SwingUtilities.invokeLater(new Runnable() {
+            //@Override
+            public void run() {
+            	StyledDocument doc = tp.getStyledDocument();
+
+            //  Define a keyword attribute
+            SimpleAttributeSet keyWord = new SimpleAttributeSet();
+            StyleConstants.setForeground(keyWord, Color.RED);
+            StyleConstants.setBackground(keyWord, Color.YELLOW);
+            StyleConstants.setBold(keyWord, true);
+        
+            //  Add some text
+            try
+            {
+                doc.insertString(doc.getLength(), s + "\n", keyWord );
+            }
+            catch(Exception e) { System.out.println(e); }
+            }
+        });
+    }
+    
+    
+    
 } //-- end class EchoClient

@@ -39,14 +39,11 @@ public class LoginHandler {
 		pw = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
 		in = new Scanner(socket.getInputStream());
 		String choice = in.nextLine();
-		//We need to ask the user ahead of time to take responsibility for initiating 
-		//Diffie-Hellman with the next client who logs in. For each pair of users 
-		//the first one to log in MUST choose 'YES'
-    	if (choice.toUpperCase().contains("YES")) {initiator = true;} else {initiator = false;}
-		
-//		System.setProperty("javax.net.ssl.keyStore", "C:\\temp-openssl-32build\\serverKeystore\\serverkeystore");
-//		System.setProperty("javax.net.ssl.keyStorePassword", "serVerstoRepasS");
-		
+		//We asked the user ahead of time to take responsibility for initiating 
+		//Diffie-Hellman with the next client who logs in. We need to tell the 
+		//server in advance what role this client will play in DH agreement
+    	if (choice.equals("yes")) {initiator = true;} else {initiator = false;}
+	
     	//create a new MyJDBChandler to perform all db queries
 		handler = new MyJDBChandler("mysql", "secure_chat_db", "root", "comodo25PAnda", "localhost", 3306);
 		
@@ -102,13 +99,17 @@ public class LoginHandler {
 		e.printStackTrace();
 		}
 	}
-	
+	/*Generate a new hash using password given to us and the salt retrieved from database 
+	 * which corresponds to the profile that this user claims to be. Then compare the generated hash
+	 * to the hash retrieved from the database. 
+	 */
 	protected boolean verify(String[] results) throws NoSuchAlgorithmException, InvalidKeySpecException {
 		int iterations = Integer.parseInt(results[4]);   //           stored hash           stored fingerprints			stored salt
 		ValidateHashedPassW vhpw = new ValidateHashedPassW(givenPassword, results[2], fingerprints, results[3], iterations, results[1]); 
 		return vhpw.validate() && vhpw.compareFingerPrints();//true if given pass matches stored pass
 	}
 	
+	//respond to client with validation 
 	protected void sendAnswer(boolean answer) {
 			verified = answer;
 			String access = (answer) ? "granted":"denied";
@@ -119,6 +120,8 @@ public class LoginHandler {
 			}
 	}
 	
+	//new and returning users send these encrypted credentials, so 
+	//receive them and decrypt them here
 	private void decryptCredentials() throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException{
 			userName = serverAes.decrypt(in.nextLine());
 			email = serverAes.decrypt(in.nextLine());

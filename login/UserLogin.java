@@ -25,92 +25,75 @@ public class UserLogin {
 	private boolean verified = false;
 	private boolean initiator;
 	private AES userAes;
-	private String alias, keyPass, keystore, storePass, csrFile;
+	private String alias, keystore, storePass, csrFile;
+	private String keyPass;
 	private String fingerprints = "";
 	
-	public UserLogin(SSLSocket sock, Scanner userInputScanner, AES userAes, String newAlias,
-				String keystore, String storePass, String csrFile) throws IOException {
+	public UserLogin(SSLSocket sock, AES userAes, String newAlias, String keystore,	String storePass,
+			String csrFile, String userName, String email, char[] givenPassword, char[] keyPass,
+			int new_return, int dh_initiator) throws IOException {
 		socket = sock;
 		this.userAes = userAes;
 		alias = newAlias;
 		this.keystore = keystore;
 		this.storePass = storePass;
 		this.csrFile = csrFile;
+		this.userName = userName;
+		this.email = email;
+		this.givenPassword = givenPassword.toString();
+		this.keyPass = keyPass.toString(); 
 		
 		pw = new PrintWriter(new OutputStreamWriter(sock.getOutputStream()));
-		
-		 System.out.println("New user or returning user?");
-		 String choice = null;
-		 while (choice == null || choice.trim().equals("")) {
-				try{
-					choice = "returning";
-							//userInputScanner.nextLine();
-				    if (choice.trim().contains("new")) {
-				    	System.out.println("Please type new username and press enter");
-				    	userName = userInputScanner.nextLine();
-				    	System.out.println("Please type your email and press enter");
-				    	email = userInputScanner.nextLine();
-				    	System.out.println("Please type a strong password and press enter");
-				    	givenPassword = userInputScanner.nextLine();
-						System.out.printf("Input new alias for %s new certificate", userName);
-						alias = "ClientC";
-						System.out.printf("Input new key password for %s new certificate", alias);
-						keyPass = alias + "pass";
-				    	registerNewUser(userInputScanner);
-				    	verified = false;
-					} else if (choice.trim().contains("return")) {
-						System.out.println("Welcome back.\nPlease enter your username and press enter");
-						userName = alias;
-						//userInputScanner.nextLine();
-				    	System.out.println("Please type your email and press enter");
-						email = alias + "@email.com";
-						//userInputScanner.nextLine();
-				    	System.out.println("Please type your password and press enter");
-				    	//TODO HARD CODED LOGIN FOR TESTING PURPOSES ONLY 
-				    	if (alias.equals("newClientA")) {
-				    		givenPassword = "newClientA-3456password";
+				 
+		 try{
+			 if (new_return == 0) {
+	
+			    	registerNewUser();
+			    	verified = false;
+				} else if (new_return == 1) {
+			    	//TODO HARD CODED LOGIN CREDENTIALS FOR TESTING PURPOSES ONLY 
+					this.userName = alias;
+					this.email = alias + "@email.com";
+			    	//TODO HARD CODED PASSWORD FOR TESTING PURPOSES ONLY 
+			    	if (alias.equals("newClientA")) {
+			    		this.givenPassword = "newClientA-3456password";
+			    	} else {
+			    	this.givenPassword = "newClientB-65478password";
+			    	}
+			    		String dh_choice;
+				    	if (dh_initiator == 0) {
+				    		initiator = true;
+				    		dh_choice = "yes";
 				    	} else {
-				    	givenPassword = "newClientB-65478password";
+				    		initiator = false;
+				    		dh_choice = "no";
 				    	}
-				    			//userInputScanner.nextLine();
-				    	
-						//We need to ask the user ahead of time to take responsibility for initiating 
-						//Diffie-Hellman with the next client who logs in. For each pair of users 
-						//the first one to log in MUST choose 'YES'
-				    	System.out.println("Please type YES to initiate Diffie-Hellman \n NO to receive request");
-				    	String choice2 = userInputScanner.nextLine();
-				    	if (choice2.toUpperCase().contains("YES")) {initiator = true;} else {initiator = false;}
-				    	pw.println(choice2);
+				    	pw.println(dh_choice);
 				    	pw.flush();
 				    	verified = returningUser();
-					} else {
-				    	System.out.println("Usernames/password must not be blank. Please try again");
-
-					}
-				}catch(Exception e){
-				    System.out.println( "error reading from keyboard");
-				    e.printStackTrace(System.err);
-					}
+				}	
+			}catch(Exception e){
+			    e.printStackTrace(System.err);
+			}
 	 	}
-	}
 	
-	protected void registerNewUser(Scanner userInput) {
+	
+	protected void registerNewUser() {
+		//create a new hash from password
 		SaltHashPassW hashP = new SaltHashPassW(givenPassword, 40000); 
 		try {
 			String [] itSaHa = hashP.createNewHash();
 			this.givenPassword = itSaHa[2];
-			createCertificate(userInput);
+			createCertificate();
 			pw.write("NEW_USER");
 			pw.flush();		
-			pw.write(userAes.encrypt(itSaHa[1]));//send salt
+			pw.write(userAes.encrypt(itSaHa[1]));//send salt that was made
 			pw.flush();
 			sendCredentials();
 			
 		} catch (IOException |InvalidKeyException |NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (NoSuchPaddingException | IllegalBlockSizeException |BadPaddingException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -125,7 +108,6 @@ public class UserLogin {
 			try {
 				Thread.sleep(200);
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			sendCredentials();
@@ -138,13 +120,12 @@ public class UserLogin {
 		return granted;
 	}
 	
-	protected void createCertificate(Scanner userInput) {
+	protected void createCertificate() {
 		keystore = alias + "Keystore.jks";
 		storePass = alias + "StorePass";
-		try {																//
-			ProcessBuilderExample pbe = new ProcessBuilderExample("genkey", alias, keyPass, keystore, storePass, null, userInput);
+		try {		//call Java keytool -genkey from the JRE to make a new keystore and certificate 														//
+			ProcessBuilderExample pbe = new ProcessBuilderExample("genkey", alias, keyPass, keystore, storePass, null);
 		} catch (IOException | InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -165,13 +146,10 @@ public class UserLogin {
 			pw.flush();
 			Thread.sleep(100);
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IllegalBlockSizeException | BadPaddingException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} 
 			
@@ -193,9 +171,9 @@ public class UserLogin {
 	
 	
 	private void getFingerprints() {
-	    
-		try {								//non-applicable args			//keypass                  csr filename
-	    	ProcessBuilderExample pbe = new ProcessBuilderExample("list", alias, "", keystore, storePass, "", null);
+	    //call Java keytool -list from JRE to retrieve SHA256 fingerprints of certificate
+		try {								//non-applicable args			//keypass            csr blank for returning user
+	    	ProcessBuilderExample pbe = new ProcessBuilderExample("list", alias, "", keystore, storePass, "");
 	    	fingerprints = pbe.getfPrints();
 		} catch (IOException | InterruptedException e) {
 			// TODO Auto-generated catch block

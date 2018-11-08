@@ -68,17 +68,24 @@ public class DHKeyBob {
 			DataOutputStream dOut = new DataOutputStream(socket.getOutputStream());
 			
 			//needed to kickstart synchronized handshake
-			dIn.readInt();
+			if (!toClientPeer) {dIn.readInt();}
 			
-			//receive our peer's cert
+			/*//receive our peer's RSA cert
+			 * then extract RSA public key from it
+			 */
 			PublicKey alicesPubKey = receiveCertInstantiateKey(dIn);
-			//send encoded our cert to peer
-			if (toClientPeer) { sendCertificateToClientPeer(dOut);
-			} else {sendCertificate(dOut);}
-			GenSig gs = new GenSig(myPrivKey);//for signing DH prime num parameters
-			VerSig vs = new VerSig(alicesPubKey);//for verifying peer's DH prime num parameters
+			//send our encoded cert to peer
+			/*two methods because client-to-client
+			 * goes through DHKeyEchoThread2
+			 */
+			if (toClientPeer) { sendCertificateToClientPeer(dOut);//to another client
+			} else {sendCertificate(dOut);}//to server
+			//for signing DH prime num parameters
+			GenSig gs = new GenSig(myPrivKey);
+			//for verifying peer's DH prime num parameters
+			VerSig vs = new VerSig(alicesPubKey);
 			
-			// receive alicePubKeyEnc
+			// receive alice's DH Public Key
 			int aPKElen = dIn.readInt();
 			byte[] alicePubKeyEnc = new byte[aPKElen];
 			dIn.readFully(alicePubKeyEnc);
@@ -89,7 +96,7 @@ public class DHKeyBob {
 			System.out.println("Signature is valid");
 			PublicKey alicePubKey = createAlicePubKey(alicePubKeyEnc);
 			
-			// send bobPubKeyEnc
+			// Bob encodes his DH public key, and sends it over to Alice.
 			byte[] bobPubKeyEnc = createBobPubKey(alicePubKey);
 	        int bPKElen = bobPubKeyEnc.length;
 			dOut.writeInt(bPKElen);
@@ -99,7 +106,7 @@ public class DHKeyBob {
 			gs.sendSignature(dOut, bobPubKeyEnc);
 			Thread.sleep(200);
 			
-			// receive aliceLen
+			// receive aliceLen for next step
 			int aliceLen = dIn.readInt();
 			// create bobSharedSecret
 			sharedSecret(aliceLen, alicePubKey);
@@ -210,7 +217,7 @@ public class DHKeyBob {
         bobKeyAgree = KeyAgreement.getInstance("DH");
         bobKeyAgree.init(bobKpair.getPrivate());
 
-        // TODO Bob encodes his public key, and sends it over to Alice.
+        //  Bob encodes his public key, and sends it over to Alice.
         byte[] bobPubKeyEnc = bobKpair.getPublic().getEncoded();
 
         return bobPubKeyEnc;
