@@ -2,7 +2,7 @@
 
 Originally this project was a Java app that provides users with access to their encrypted files. You can see those humble beginnings on branch1.
 
-Now I am converting it into a secure instant messaging system. This project will be [my senior year self-study project for my BS in Computer Science at University of Houston - Downtown.][senior-thesis] 
+Now I am converting it into a secure instant messaging system. This project will be [my senior year self-study project for my BS in Computer Science at University of Houston - Downtown.](https://docs.google.com/document/d/1Pvsf8mkvSPBPWMvIS48InP2EKXXIy0nKCwXe14TLvbU/edit?usp=sharing)
 
 It is configured for TLS 1.2 via Sun JSSE. The TLS connection uses mutual authentication, meaning every connected client must have a certificate signed by a CA before connecting. This project assumes the Server Certificate acts as the CA that signs each client certificate. A test Certificate Authority will be at the top of the chain for both server and client. Certificates were made using Java keytool and OpenSSL and should be made as RSA keys using the RSA signing algorithm. This program can make its own certs by calling Java keytool -genkeypair from the JRE. However, the next step in the signing process is using keytool -certreq to make a certificate signing request .csr, and I could not get keytool -certreq to execute from the JRE. Not even if I executed it with elevated privileges. 
 
@@ -15,5 +15,3 @@ This project uses the Diffie-Hellman key exchange for AES/CBC symmetric encrypti
 Every DH key exchange is protected from a MITM attack by replicating a DHE scheme. The long-term RSA keys that were used in the TLS handshake are used to sign and verify the DH parameters that are sent. Signatures are created for each DH prime number parameter exchanged by using private keys. The two peers, either client-server or client-client, will first exchange encoded copies of their certificates and extract the public keys to be used to verify the other party's signatures. If the signatures are invalid the protocol ends.
 
 Chat messages are encrypted first and hashed second. This project uses HMAC SHA-256 to hash each message using the shared DH key. Only the two corresponding clients with that DH key can recalculate the HMAC and thus can verify the integrity of the message.
-
-[senior_thesis]: https://docs.google.com/document/d/1Pvsf8mkvSPBPWMvIS48InP2EKXXIy0nKCwXe14TLvbU/edit?usp=sharing
